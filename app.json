@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "new-schedule-app",
-    "slug": "new-schedule-app",
+    "name": "My Schedule",
+    "slug": "my-schedule",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "newscheduleapp",
+    "scheme": "myschedule",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/expo.icon"
@@ -17,7 +17,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.myschedule.app"
     },
     "web": {
       "output": "static",
@@ -32,7 +33,9 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sharing",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
