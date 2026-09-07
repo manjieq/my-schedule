@@ -40,12 +40,18 @@ yarn-error.*
 
 example
 
+# AI-agent hint files — kept locally to help coding assistants, but not
+# part of the repo itself (they carry no function for the app/build).
+AGENTS.md
+CLAUDE.md
+.claude/
+
 # iOS isn't built by this project — never generated, so nothing to track.
 /ios
 
-# android/ IS tracked (see CLAUDE.md / keystore.properties) — the signing
-# config hand-edited into android/app/build.gradle needs to survive, so it
-# can't be treated as a disposable `expo prebuild` output like /ios above.
+# android/ IS tracked (see keystore.properties above) — the signing config
+# hand-edited into android/app/build.gradle needs to survive, so it can't
+# be treated as a disposable `expo prebuild` output like /ios above.
 # Only its own build artifacts/caches are ignored:
 android/build/
 android/app/build/
