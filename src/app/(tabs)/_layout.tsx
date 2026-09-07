@@ -2,13 +2,14 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 
 import { SettingsHeaderButton } from '@/components/layout/AppHeader';
+import { ACCENT } from '@/lib/theme';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerRight: () => <SettingsHeaderButton />,
-        tabBarActiveTintColor: '#2563eb',
+        tabBarActiveTintColor: ACCENT,
       }}
     >
       <Tabs.Screen

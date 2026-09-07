@@ -1,8 +1,10 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { formatTime } from '@/lib/time';
+import { ICON_MUTED, useRipple } from '@/lib/theme';
 import { DAYS_OF_WEEK, DAY_LABELS, type DayOfWeek, type TimeSlot } from '@/lib/models';
 
 interface TimeSlotEditorProps {
@@ -16,6 +18,8 @@ const DEFAULT_SLOT: TimeSlot = { day: 'MON', start: '09:00', end: '10:00' };
  *  async/TBD class), and more than one (e.g. a lecture plus a separate
  *  lab day), across the full Mon-Sun week. */
 export function TimeSlotEditor({ slots, onChange }: TimeSlotEditorProps) {
+  const ripple = useRipple();
+
   function updateSlot(index: number, patch: Partial<TimeSlot>) {
     onChange(slots.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)));
   }
@@ -40,9 +44,11 @@ export function TimeSlotEditor({ slots, onChange }: TimeSlotEditorProps) {
       ))}
       <Pressable
         onPress={addSlot}
-        className="items-center rounded-xl border border-dashed border-neutral-300 py-3 active:opacity-70 dark:border-neutral-700"
+        android_ripple={ripple}
+        className="flex-row items-center justify-center gap-1.5 rounded-xl border border-dashed border-neutral-300 py-3 dark:border-neutral-700"
       >
-        <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400">+ Add meeting time</Text>
+        <Ionicons name="add" size={16} color={ICON_MUTED} />
+        <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Add meeting time</Text>
       </Pressable>
     </View>
   );
@@ -57,6 +63,7 @@ function SlotRow({
   onChange: (patch: Partial<TimeSlot>) => void;
   onRemove: () => void;
 }) {
+  const ripple = useRipple();
   const [openPicker, setOpenPicker] = useState<'start' | 'end' | null>(null);
 
   function handlePickerChange(field: 'start' | 'end', event: { type: string }, date?: Date) {
@@ -79,7 +86,7 @@ function SlotRow({
         <TimeButton label="Start" value={slot.start} onPress={() => setOpenPicker('start')} />
         <Text className="text-neutral-400">–</Text>
         <TimeButton label="End" value={slot.end} onPress={() => setOpenPicker('end')} />
-        <Pressable onPress={onRemove} hitSlop={8} className="ml-auto p-1">
+        <Pressable onPress={onRemove} hitSlop={10} android_ripple={ripple} className="ml-auto rounded-md p-2">
           <Text className="text-sm font-medium text-red-600 dark:text-red-400">Remove</Text>
         </Pressable>
       </View>
@@ -97,12 +104,12 @@ function SlotRow({
 }
 
 function DayChip({ day, selected, onPress }: { day: DayOfWeek; selected: boolean; onPress: () => void }) {
+  const ripple = useRipple(selected);
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-full px-3 py-1.5 active:opacity-70 ${
-        selected ? 'bg-blue-600' : 'bg-white dark:bg-neutral-800'
-      }`}
+      android_ripple={ripple}
+      className={`rounded-full px-3 py-1.5 ${selected ? 'bg-violet-600' : 'bg-white dark:bg-neutral-800'}`}
     >
       <Text className={`text-xs font-semibold ${selected ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'}`}>
         {DAY_LABELS[day].slice(0, 3)}
@@ -112,10 +119,12 @@ function DayChip({ day, selected, onPress }: { day: DayOfWeek; selected: boolean
 }
 
 function TimeButton({ label, value, onPress }: { label: string; value: string; onPress: () => void }) {
+  const ripple = useRipple();
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 active:opacity-70 dark:border-neutral-700 dark:bg-neutral-800"
+      android_ripple={ripple}
+      className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
     >
       <Text className="text-[10px] uppercase text-neutral-400">{label}</Text>
       <Text className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{formatTime(value)}</Text>

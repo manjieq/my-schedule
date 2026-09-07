@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
-import { getThemePreference, setThemePreference } from '@/lib/theme';
+import { getThemePreference, setThemePreference, useRipple } from '@/lib/theme';
 import type { ThemePreference } from '@/lib/models';
 
 const OPTIONS: { value: ThemePreference; label: string }[] = [
@@ -16,6 +16,8 @@ export function ThemePicker() {
   // rendering until that same read resolves, so in practice this only
   // ever shows the already-correct value.
   const [preference, setPreference] = useState<ThemePreference>('system');
+  const rippleNeutral = useRipple(false);
+  const rippleOnColor = useRipple(true);
 
   useEffect(() => {
     getThemePreference().then(setPreference);
@@ -38,8 +40,9 @@ export function ThemePicker() {
           <Pressable
             key={option.value}
             onPress={() => handleSelect(option.value)}
+            android_ripple={selected ? rippleOnColor : rippleNeutral}
             className={`flex-1 items-center rounded-xl py-2.5 ${
-              selected ? 'bg-blue-600' : 'bg-neutral-100 dark:bg-neutral-900'
+              selected ? 'bg-violet-600' : 'bg-neutral-100 dark:bg-neutral-900'
             }`}
           >
             <Text
