@@ -20,7 +20,7 @@ export function ClassList({ classes, includedIds, onToggleIncluded, onPressClass
   if (classes.length === 0) {
     return (
       <EmptyState
-        icon="🗓️"
+        icon="calendar-outline"
         title="No classes yet"
         message="Tap the + button to add your first class — name, place, and when it meets."
       />
@@ -32,11 +32,12 @@ export function ClassList({ classes, includedIds, onToggleIncluded, onPressClass
       data={classes}
       keyExtractor={(item) => item.id}
       contentContainerClassName="py-3"
-      renderItem={({ item }) => (
+      renderItem={({ item, index }) => (
         <ClassCard
           classEntry={item}
           color={colorMap.get(item.id) ?? '#9ca3af'}
           included={includedIds.includes(item.id)}
+          index={index}
           onToggleIncluded={() => onToggleIncluded(item.id)}
           onPress={() => onPressClass(item.id)}
           onDelete={() => onDeleteClass(item.id)}

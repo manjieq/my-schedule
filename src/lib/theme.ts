@@ -68,3 +68,36 @@ export function useThemeRestore(): boolean {
 }
 
 export { useColorScheme };
+
+// Material ripple tints for android_ripple. A plain opacity dim on press is
+// the iOS convention (that's what every `active:opacity-*` class here used
+// to do); Android users expect a ripple instead, so every Pressable in this
+// app passes one of these rather than an opacity variant. useRipple() reads
+// the live color scheme; pass true for a Pressable whose own background is
+// already a saturated brand color (the FAB, a filled primary button) so the
+// ripple reads against that color instead of against a neutral surface.
+const RIPPLE_ON_LIGHT_SURFACE = 'rgba(0, 0, 0, 0.10)';
+const RIPPLE_ON_DARK_SURFACE = 'rgba(255, 255, 255, 0.16)';
+const RIPPLE_ON_COLOR = 'rgba(255, 255, 255, 0.28)';
+
+export function useRipple(onColor = false): { color: string } {
+  const { colorScheme } = useColorScheme();
+  if (onColor) return { color: RIPPLE_ON_COLOR };
+  return { color: colorScheme === 'dark' ? RIPPLE_ON_DARK_SURFACE : RIPPLE_ON_LIGHT_SURFACE };
+}
+
+/** Shared tint for secondary/meta icons (trash, location pin, empty-state
+ *  glyphs) — the same neutral-400 value already used as `text-neutral-400`
+ *  elsewhere, centralized here because RN icon libraries take a raw color
+ *  prop rather than a className. */
+export const ICON_MUTED = '#9ca3af';
+
+/** The app's one brand accent — Tailwind's violet-600, replacing the stock
+ *  blue-600 every primary action used to default to. Used identically in
+ *  both themes (same as blue-600 was): it's a filled-surface or icon/text
+ *  color, not a page background, so it doesn't need a separate dark-mode
+ *  shade. Raw hex because RN APIs that don't take a className (Ionicons'
+ *  `color`, Switch's `trackColor`/`thumbColor`, tabBarActiveTintColor) need
+ *  the actual value — the `violet-600`/`violet-400` Tailwind classes used
+ *  elsewhere are this same color. */
+export const ACCENT = '#7c3aed';

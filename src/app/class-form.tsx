@@ -4,12 +4,15 @@ import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-nativ
 
 import { TimeSlotEditor } from '@/components/classes/TimeSlotEditor';
 import { useAppState } from '@/lib/app-state';
+import { useRipple } from '@/lib/theme';
 import type { TimeSlot } from '@/lib/models';
 
 export default function ClassFormScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
   const { state, dispatch } = useAppState();
   const router = useRouter();
+  const ripple = useRipple();
+  const rippleOnColor = useRipple(true);
 
   const existing = useMemo(() => state.classes.find((c) => c.id === id), [state.classes, id]);
   const isEditing = Boolean(existing);
@@ -105,13 +108,14 @@ export default function ClassFormScreen() {
       <Pressable
         onPress={handleSave}
         disabled={!canSave}
-        className="mt-2 items-center rounded-xl bg-blue-600 py-3.5 disabled:opacity-40 active:opacity-90"
+        android_ripple={rippleOnColor}
+        className="mt-2 items-center rounded-xl bg-violet-600 py-3.5 disabled:opacity-40"
       >
         <Text className="text-base font-semibold text-white">{isEditing ? 'Save changes' : 'Add class'}</Text>
       </Pressable>
 
       {isEditing ? (
-        <Pressable onPress={handleDelete} className="items-center py-2 active:opacity-70">
+        <Pressable onPress={handleDelete} android_ripple={ripple} className="items-center rounded-md py-2">
           <Text className="text-sm font-medium text-red-600 dark:text-red-400">Delete class</Text>
         </Pressable>
       ) : null}

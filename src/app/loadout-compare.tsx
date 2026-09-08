@@ -13,6 +13,7 @@ import { ComparisonPanel } from '@/components/loadouts/ComparisonPanel';
 import { useAppState } from '@/lib/app-state';
 import { buildColorMap } from '@/lib/color';
 import { useComparisonLayout } from '@/lib/loadout-compare';
+import { useRipple } from '@/lib/theme';
 
 const MIN_PANEL_WIDTH = 260;
 const OUTER_PADDING = 16;
@@ -22,6 +23,7 @@ export default function LoadoutCompareScreen() {
   const router = useRouter();
   const { ids } = useLocalSearchParams<{ ids?: string }>();
   const { state } = useAppState();
+  const ripple = useRipple();
 
   const classesById = useMemo(() => new Map(state.classes.map((c) => [c.id, c])), [state.classes]);
   const colorMap = useMemo(() => buildColorMap(state.classes), [state.classes]);
@@ -105,7 +107,11 @@ export default function LoadoutCompareScreen() {
           <Text className="text-sm font-bold text-neutral-900 dark:text-neutral-50">
             Comparing {count} loadout{count === 1 ? '' : 's'}
           </Text>
-          <Pressable onPress={() => router.back()} hitSlop={8}>
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={10}
+            android_ripple={{ ...ripple, borderless: true, radius: 24 }}
+          >
             <Text className="text-xs text-neutral-500 dark:text-neutral-400">
               {isLandscape ? 'Rotate back, or tap Done' : 'Done'}
             </Text>

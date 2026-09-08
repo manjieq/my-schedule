@@ -4,6 +4,7 @@ import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { getErrorMessage } from '@/lib/errors';
 import { saveImageToGallery, shareImage } from '@/lib/export-image';
+import { ACCENT, useRipple } from '@/lib/theme';
 import type { ClassEntry, ConflictPair } from '@/lib/models';
 
 import { ScheduleGrid } from '../schedule/ScheduleGrid';
@@ -83,14 +84,16 @@ function ExportButton({
   disabled: boolean;
   onPress: () => void;
 }) {
+  const ripple = useRipple();
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
-      className="flex-1 items-center rounded-xl border border-neutral-300 bg-white py-2.5 disabled:opacity-40 active:opacity-70 dark:border-neutral-700 dark:bg-neutral-900"
+      android_ripple={ripple}
+      className="flex-1 items-center rounded-xl border border-neutral-300 bg-white py-2.5 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900"
     >
       {busy ? (
-        <ActivityIndicator />
+        <ActivityIndicator color={ACCENT} />
       ) : (
         <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</Text>
       )}

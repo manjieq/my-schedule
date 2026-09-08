@@ -4,9 +4,11 @@ import { CreditCapEditor } from '@/components/settings/CreditCapEditor';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { ErrorState } from '@/components/common/ErrorState';
 import { useAppState } from '@/lib/app-state';
+import { useRipple } from '@/lib/theme';
 
 export default function SettingsScreen() {
   const { state, dispatch } = useAppState();
+  const ripple = useRipple();
 
   function handleResetAll() {
     Alert.alert(
@@ -51,7 +53,8 @@ export default function SettingsScreen() {
       <Section title="Danger zone">
         <Pressable
           onPress={handleResetAll}
-          className="items-center rounded-xl border border-red-200 bg-red-50 py-3 active:opacity-70 dark:border-red-900 dark:bg-red-950"
+          android_ripple={ripple}
+          className="items-center rounded-xl border border-red-200 bg-red-50 py-3 dark:border-red-900 dark:bg-red-950"
         >
           <Text className="text-sm font-semibold text-red-600 dark:text-red-400">Erase all data</Text>
         </Pressable>

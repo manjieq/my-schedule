@@ -8,6 +8,7 @@ import { LoadoutComparisonView } from '@/components/loadouts/LoadoutComparisonVi
 import { LoadoutList } from '@/components/loadouts/LoadoutList';
 import { useAppState } from '@/lib/app-state';
 import { buildColorMap } from '@/lib/color';
+import { useRipple } from '@/lib/theme';
 import type { Loadout } from '@/lib/models';
 
 // Beyond this, side-by-side comparison stops being readable — panels just
@@ -21,6 +22,7 @@ export default function LoadoutsScreen() {
   const router = useRouter();
   const { state, dispatch } = useAppState();
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+  const ripple = useRipple();
 
   const classesById = useMemo(() => new Map(state.classes.map((c) => [c.id, c])), [state.classes]);
   const colorMap = useMemo(() => buildColorMap(state.classes), [state.classes]);
@@ -85,6 +87,7 @@ export default function LoadoutsScreen() {
               params: { ids: comparedLoadouts.map((l) => l.id).join(',') },
             })
           }
+          android_ripple={ripple}
           className="rounded-xl border border-neutral-200 bg-white p-3 dark:border-neutral-800 dark:bg-neutral-900"
         >
           <Text className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Open full-screen comparison</Text>
