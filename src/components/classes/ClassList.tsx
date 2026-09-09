@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList } from 'react-native';
 
 import { EmptyState } from '@/components/common/EmptyState';
 import { buildColorMap } from '@/lib/color';
@@ -10,6 +10,7 @@ import { ClassCard } from './ClassCard';
 interface ClassListProps {
   classes: ClassEntry[];
   includedIds: string[];
+  deletable?: boolean;
   onToggleIncluded: (id: string) => void;
   onPressClass: (id: string) => void;
   onDeleteClass: (id: string) => void;
@@ -21,6 +22,7 @@ export function ClassList({
   onToggleIncluded,
   onPressClass,
   onDeleteClass,
+  deletable = false,
 }: ClassListProps) {
   // Memoized — this used to rebuild the whole colour map on every render of
   // every keystroke-driven parent.
@@ -49,6 +51,7 @@ export function ClassList({
           color={colorMap.get(item.id) ?? '#5c7f96'}
           included={includedIds.includes(item.id)}
           index={index}
+          deletable={deletable}
           onToggleIncluded={() => onToggleIncluded(item.id)}
           onPress={() => onPressClass(item.id)}
           onDelete={() => onDeleteClass(item.id)}

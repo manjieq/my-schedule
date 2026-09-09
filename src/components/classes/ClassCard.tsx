@@ -13,6 +13,8 @@ interface ClassCardProps {
   /** Position in the list — only used to stagger this card's entrance so a
    *  freshly-added or first-loaded list reveals as a cascade, not a pop. */
   index: number;
+  /** Delete mode is off by default — see the note on the trash cell below. */
+  deletable?: boolean;
   onToggleIncluded: () => void;
   onPress: () => void;
   onDelete: () => void;
@@ -32,6 +34,7 @@ export function ClassCard({
   color,
   included,
   index,
+  deletable = false,
   onToggleIncluded,
   onPress,
   onDelete,
@@ -116,17 +119,20 @@ export function ClassCard({
           </Pressable>
         </Pressable>
 
-        {/* Its own cell, outside the key — deleting is not part of pressing the
-            class, and on a panel a destructive control never shares a cap. */}
-        <Pressable
-          onPress={onDelete}
-          android_ripple={{ ...ripple, borderless: true, radius: 22 }}
-          accessibilityRole="button"
-          accessibilityLabel={`Delete ${classEntry.name}`}
-          className="w-11 items-center justify-center"
-        >
-          <Ionicons name="trash-outline" size={17} color={c.ink3} />
-        </Pressable>
+        {/* Hidden until delete mode is on. A trash icon permanently parked
+            beside a row people tap constantly is an accident waiting to
+            happen; the mode makes deleting a thing you go and ask for. */}
+        {deletable ? (
+          <Pressable
+            onPress={onDelete}
+            android_ripple={{ ...ripple, borderless: true, radius: 22 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${classEntry.name}`}
+            className="w-11 items-center justify-center"
+          >
+            <Ionicons name="trash-outline" size={17} color={c.alert} />
+          </Pressable>
+        ) : null}
       </View>
     </Animated.View>
   );

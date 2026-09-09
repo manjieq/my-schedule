@@ -25,6 +25,9 @@ interface MastheadAction {
   label: string;
   onPress: () => void;
   disabled?: boolean;
+  /** A latched mode, e.g. delete mode. Draws the icon in the alert colour so
+   *  the screen never sits in a destructive state without saying so. */
+  active?: boolean;
 }
 
 interface MastheadProps {
@@ -65,7 +68,7 @@ export function Masthead({ title, actions = [] }: MastheadProps) {
               android_ripple={{ ...ripple, borderless: true, radius: 22 }}
               className="h-11 w-11 items-center justify-center disabled:opacity-40"
             >
-              <Ionicons name={action.icon} size={19} color={c.ink2} />
+              <Ionicons name={action.icon} size={19} color={action.active ? c.alert : c.ink2} />
             </Pressable>
           ))}
 

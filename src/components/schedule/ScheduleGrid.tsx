@@ -21,7 +21,7 @@ import { layoutOverlaps, type LayoutInput } from '@/lib/layout';
 
 import { EventBlock } from './EventBlock';
 
-const GUTTER_WIDTH = 30;
+const GUTTER_WIDTH = 24;
 const DEFAULT_DAY_COLUMN_WIDTH = 104;
 const MIN_DAY_COLUMN_WIDTH = 64;
 // onLayout reports the root View's border-box width, but its border eats a
@@ -139,7 +139,11 @@ export function ScheduleGrid({
 
   return (
     <View
-      className="mx-4"
+      // The board sits closer to the edge than the rest of the panel. It is
+      // the widest thing on the screen and the only one whose content scales
+      // with the space it gets; matching the readout's inset made it look
+      // narrower than the meter running underneath it.
+      className="mx-2"
       // borderStyle is a whole-view property in React Native and was coming
       // through dashed on device; say it outright.
       style={{ borderStyle: 'solid' }}
@@ -206,14 +210,15 @@ export function ScheduleGrid({
               }
               const positioned = layoutOverlaps(entries);
               const isToday = showNow && day === today;
+              const isLastDay = day === days[days.length - 1];
 
               return (
                 <View
                   key={day}
                   style={{
-                    width: DAY_COLUMN_WIDTH - 4,
+                    width: DAY_COLUMN_WIDTH - (isLastDay ? 0 : 4),
                     height: bodyHeight,
-                    marginRight: 4,
+                    marginRight: isLastDay ? 0 : 4,
                     borderTopWidth: 1,
                     borderTopColor: 'rgba(0,0,0,0.10)',
                   }}

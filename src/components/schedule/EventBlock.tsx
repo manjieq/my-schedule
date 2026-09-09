@@ -77,11 +77,22 @@ export function EventBlock({
         <Text className="font-panel-semi text-tag text-ink-2" numberOfLines={1}>
           {formatTime(slot.start)}
         </Text>
-        {/* No sheet face here: class names are the user's own Korean content,
-            which Chivo does not carry. See PRODUCT.md. */}
-        <Text className="mt-[1px] text-meta font-bold text-ink" numberOfLines={dense ? 1 : 2}>
-          {classEntry.name}
-        </Text>
+        {/* The short code if the user gave one, otherwise the name. A block
+            this size truncates a full name to nothing useful, which is what
+            the code exists to avoid — see ClassEntry.code.
+
+            No panel face on the fallback: class names are the user's own
+            Korean content, which Chivo does not carry. See PRODUCT.md. The
+            code is Latin by convention, so it can take the panel face. */}
+        {classEntry.code ? (
+          <Text className="mt-[1px] font-panel-bold text-meta text-ink" numberOfLines={1}>
+            {classEntry.code}
+          </Text>
+        ) : (
+          <Text className="mt-[1px] text-meta font-bold text-ink" numberOfLines={dense ? 1 : 2}>
+            {classEntry.name}
+          </Text>
+        )}
         {!dense && classEntry.location ? (
           <Text className="mt-auto font-panel-semi text-tag text-ink-3" numberOfLines={1}>
             {classEntry.location}
