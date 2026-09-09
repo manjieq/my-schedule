@@ -4,7 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Pressable, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/common/EmptyState';
-import { useColorScheme, useRipple } from '@/lib/theme';
+import { useRipple, usePanelColors } from '@/lib/theme';
 import type { ClassEntry, Loadout } from '@/lib/models';
 
 import { LoadoutCard } from './LoadoutCard';
@@ -18,6 +18,7 @@ interface LoadoutListProps {
    *  the tap on, so the explanatory alert still fires) any not-yet-selected
    *  loadout's Compare checkbox. */
   compareLimitReached?: boolean;
+  colorFor: (classId: string) => string;
   onLoad: (loadout: Loadout) => void;
   onDelete: (id: string) => void;
   onToggleCompare: (id: string) => void;
@@ -29,19 +30,20 @@ export function LoadoutList({
   maxCredits,
   compareSelectedIds,
   compareLimitReached = false,
+  colorFor,
   onLoad,
   onDelete,
   onToggleCompare,
 }: LoadoutListProps) {
   const ripple = useRipple();
-  const { colorScheme } = useColorScheme();
+  const c = usePanelColors();
 
   if (loadouts.length === 0) {
     return (
       <EmptyState
-        icon="bookmark-outline"
-        title="No loadouts saved yet"
-        message="Add classes in the Classes tab, then save your schedule from the Schedule tab."
+        icon="albums-outline"
+        title="No loadouts saved"
+        message="A loadout is a saved combination of classes. Build a week on the Schedule tab, save it, then save another — and compare them side by side to decide."
       />
     );
   }
@@ -49,7 +51,9 @@ export function LoadoutList({
   return (
     <View>
       {loadouts.map((loadout, index) => {
-        const classes = loadout.classIds.map((id) => classesById.get(id)).filter((c): c is ClassEntry => Boolean(c));
+        const classes = loadout.classIds
+          .map((id) => classesById.get(id))
+          .filter((cl): cl is ClassEntry => Boolean(cl));
         const compared = compareSelectedIds.has(loadout.id);
         return (
           <LoadoutCard
@@ -58,42 +62,55 @@ export function LoadoutList({
             classes={classes}
             maxCredits={maxCredits}
             index={index}
+            colorFor={colorFor}
             actions={
-              <View className="flex-row flex-wrap items-center gap-4 pt-1">
+              // Each cell clears 48dp and they are separated by a real gap
+              // rather than sharing a hairline; DELETE is pushed out to its own
+              // narrow cell at the end, so the destructive action is never
+              // adjacent to the one people press constantly.
+              <View className="flex-row gap-2 p-2 pt-1.5">
                 <Pressable
                   onPress={() => onLoad(loadout)}
-                  hitSlop={10}
                   android_ripple={ripple}
-                  className="rounded-md px-1 py-0.5"
+                  accessibilityRole="button"
+                  accessibilityLabel={`Load ${loadout.name} into the schedule`}
+                  className="h-12 flex-1 items-center justify-center rounded-key bg-accent"
                 >
-                  <Text className="text-sm font-medium text-neutral-900 dark:text-neutral-50">Load into Classes</Text>
+                  <Text className="font-panel-semi text-code uppercase text-accent-on">Load</Text>
                 </Pressable>
-                <Pressable
-                  onPress={() => onDelete(loadout.id)}
-                  hitSlop={10}
-                  android_ripple={ripple}
-                  className="rounded-md px-1 py-0.5"
-                >
-                  <Text className="text-sm font-medium text-red-600 dark:text-red-400">Delete</Text>
-                </Pressable>
+
                 <Pressable
                   onPress={() => onToggleCompare(loadout.id)}
-                  className={`flex-row items-center gap-1.5 rounded-md px-1 py-0.5 ${!compared && compareLimitReached ? 'opacity-40' : ''}`}
-                  hitSlop={10}
                   android_ripple={ripple}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: compared }}
+                  accessibilityLabel={`Compare ${loadout.name}`}
+                  className={`h-12 flex-1 flex-row items-center justify-center gap-2 rounded-key ${
+                    compared ? 'bg-accent-lo' : 'bg-well'
+                  } ${!compared && compareLimitReached ? 'opacity-40' : ''}`}
                 >
                   <View
-                    className={`h-4 w-4 items-center justify-center rounded border ${
-                      compared
-                        ? 'border-neutral-900 bg-neutral-900 dark:border-neutral-100 dark:bg-neutral-100'
-                        : 'border-neutral-300 dark:border-neutral-700'
+                    className={`h-4 w-4 items-center justify-center rounded-[5px] ${
+                      compared ? 'bg-accent-hi' : 'bg-key'
                     }`}
                   >
-                    {compared && (
-                      <Ionicons name="checkmark" size={11} color={colorScheme === 'dark' ? '#171717' : '#ffffff'} />
-                    )}
+                    {compared ? <Ionicons name="checkmark" size={11} color={c.onAccent} /> : null}
                   </View>
-                  <Text className="text-sm text-neutral-700 dark:text-neutral-300">Compare</Text>
+                  <Text
+                    className={`font-panel-semi text-code uppercase ${compared ? 'text-accent-on' : 'text-ink-2'}`}
+                  >
+                    Compare
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={() => onDelete(loadout.id)}
+                  android_ripple={ripple}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Delete ${loadout.name}`}
+                  className="h-12 w-12 items-center justify-center rounded-key bg-well"
+                >
+                  <Ionicons name="trash-outline" size={16} color={c.ink3} />
                 </Pressable>
               </View>
             }

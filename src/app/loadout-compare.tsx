@@ -13,6 +13,7 @@ import { ComparisonPanel } from '@/components/loadouts/ComparisonPanel';
 import { useAppState } from '@/lib/app-state';
 import { buildColorMap } from '@/lib/color';
 import { useComparisonLayout } from '@/lib/loadout-compare';
+import { revisionStock } from '@/lib/revisions';
 import { useRipple } from '@/lib/theme';
 
 const MIN_PANEL_WIDTH = 260;
@@ -27,7 +28,7 @@ export default function LoadoutCompareScreen() {
 
   const classesById = useMemo(() => new Map(state.classes.map((c) => [c.id, c])), [state.classes]);
   const colorMap = useMemo(() => buildColorMap(state.classes), [state.classes]);
-  const colorFor = (id: string) => colorMap.get(id) ?? '#9ca3af';
+  const colorFor = (id: string) => colorMap.get(id) ?? '#5c7f96';
 
   const { width, height } = useWindowDimensions();
   const isLandscape = width > height;
@@ -96,39 +97,45 @@ export default function LoadoutCompareScreen() {
         days={days}
         maxHeight={panelsAreaHeight || undefined}
         sharedClassIds={sharedClassIds}
+        stock={revisionStock(state.loadouts.findIndex((l) => l.id === loadout.id))}
       />
     ));
   }
 
   return (
-    <View className="flex-1 bg-neutral-50 dark:bg-black">
+    <View className="flex-1 bg-stock">
       <View className="gap-1 px-4 pb-2 pt-3">
         <View className="flex-row items-center justify-between">
-          <Text className="text-sm font-bold text-neutral-900 dark:text-neutral-50">
+          <Text className="font-panel-semi text-micro uppercase text-ink-2">
             Comparing {count} loadout{count === 1 ? '' : 's'}
           </Text>
           <Pressable
             onPress={() => router.back()}
-            hitSlop={10}
+            hitSlop={14}
+            accessibilityRole="button"
             android_ripple={{ ...ripple, borderless: true, radius: 24 }}
+            className="min-h-12 justify-center px-1"
           >
-            <Text className="text-xs text-neutral-500 dark:text-neutral-400">
-              {isLandscape ? 'Rotate back, or tap Done' : 'Done'}
+            <Text className="font-panel-semi text-code uppercase text-ink">
+              {isLandscape ? 'Rotate back, or done' : 'Done'}
             </Text>
           </Pressable>
         </View>
         {isLandscape && count >= 2 && (
-          <Text className="text-[11px] text-neutral-500 dark:text-neutral-400">
-            Dashed outline = not in every compared loadout ({sharedClassIds.size} class
-            {sharedClassIds.size === 1 ? '' : 'es'} shared by all)
+          <Text className="font-panel-semi text-code text-ink-3">
+            Dashed edge = not in every compared loadout · {sharedClassIds.size} class
+            {sharedClassIds.size === 1 ? '' : 'es'} in all
           </Text>
         )}
       </View>
 
       {!isLandscape ? (
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-center text-sm text-neutral-500 dark:text-neutral-400">
-            Rotate your device sideways to see both full schedules side by side.
+          <Text className="text-center font-panel-semi text-code uppercase text-ink-2">
+            rotate sideways
+          </Text>
+          <Text className="mt-2 text-center text-meta text-ink-3">
+            The sheets go side by side in landscape, at a size you can actually read.
           </Text>
         </View>
       ) : fitsEven ? (

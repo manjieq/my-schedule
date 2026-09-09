@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { formatTime } from '@/lib/time';
-import { ICON_MUTED, useRipple } from '@/lib/theme';
+import { useRipple, usePanelColors } from '@/lib/theme';
 import { DAYS_OF_WEEK, DAY_LABELS, type DayOfWeek, type TimeSlot } from '@/lib/models';
 
 interface TimeSlotEditorProps {
@@ -19,6 +19,7 @@ const DEFAULT_SLOT: TimeSlot = { day: 'MON', start: '09:00', end: '10:00' };
  *  lab day), across the full Mon-Sun week. */
 export function TimeSlotEditor({ slots, onChange }: TimeSlotEditorProps) {
   const ripple = useRipple();
+  const c = usePanelColors();
 
   function updateSlot(index: number, patch: Partial<TimeSlot>) {
     onChange(slots.map((slot, i) => (i === index ? { ...slot, ...patch } : slot)));
@@ -33,10 +34,11 @@ export function TimeSlotEditor({ slots, onChange }: TimeSlotEditorProps) {
   }
 
   return (
-    <View className="gap-3">
+    <View className="gap-2">
       {slots.map((slot, index) => (
         <SlotRow
           key={index}
+          index={index}
           slot={slot}
           onChange={(patch) => updateSlot(index, patch)}
           onRemove={() => removeSlot(index)}
@@ -45,20 +47,23 @@ export function TimeSlotEditor({ slots, onChange }: TimeSlotEditorProps) {
       <Pressable
         onPress={addSlot}
         android_ripple={ripple}
-        className="flex-row items-center justify-center gap-1.5 rounded-xl border border-dashed border-neutral-300 py-3 dark:border-neutral-700"
+        accessibilityRole="button"
+        className="min-h-12 flex-row items-center justify-center gap-1.5 rounded-key border border-dashed border-edge"
       >
-        <Ionicons name="add" size={16} color={ICON_MUTED} />
-        <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400">Add meeting time</Text>
+        <Ionicons name="add" size={14} color={c.ink2} />
+        <Text className="font-panel-semi text-code uppercase text-ink-2">Add meeting time</Text>
       </Pressable>
     </View>
   );
 }
 
 function SlotRow({
+  index,
   slot,
   onChange,
   onRemove,
 }: {
+  index: number;
   slot: TimeSlot;
   onChange: (patch: Partial<TimeSlot>) => void;
   onRemove: () => void;
@@ -75,20 +80,31 @@ function SlotRow({
   }
 
   return (
-    <View className="gap-2 rounded-xl bg-neutral-100 p-3 dark:bg-neutral-900">
-      <View className="flex-row flex-wrap gap-1.5">
+    <View className="rounded-key border border-edge bg-key">
+      <View className="flex-row items-center justify-between border-b border-hair px-2 py-1">
+        <Text className="font-panel-semi text-micro uppercase text-ink-2">Meeting {index + 1}</Text>
+        <Pressable
+          onPress={onRemove}
+          hitSlop={12}
+          android_ripple={ripple}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove meeting ${index + 1}`}
+          className="px-1 py-1"
+        >
+          <Text className="font-panel-semi text-code uppercase text-alert">Remove</Text>
+        </Pressable>
+      </View>
+
+      <View className="flex-row flex-wrap gap-1 p-2">
         {DAYS_OF_WEEK.map((day) => (
           <DayChip key={day} day={day} selected={slot.day === day} onPress={() => onChange({ day })} />
         ))}
       </View>
 
-      <View className="flex-row items-center gap-2">
+      <View className="flex-row items-stretch border-t border-hair">
         <TimeButton label="Start" value={slot.start} onPress={() => setOpenPicker('start')} />
-        <Text className="text-neutral-400">–</Text>
+        <View className="w-px bg-hair" />
         <TimeButton label="End" value={slot.end} onPress={() => setOpenPicker('end')} />
-        <Pressable onPress={onRemove} hitSlop={10} android_ripple={ripple} className="ml-auto rounded-md p-2">
-          <Text className="text-sm font-medium text-red-600 dark:text-red-400">Remove</Text>
-        </Pressable>
       </View>
 
       {openPicker ? (
@@ -109,10 +125,17 @@ function DayChip({ day, selected, onPress }: { day: DayOfWeek; selected: boolean
     <Pressable
       onPress={onPress}
       android_ripple={ripple}
-      className={`rounded-full px-3 py-1.5 ${selected ? 'bg-violet-600' : 'bg-white dark:bg-neutral-800'}`}
+      accessibilityRole="radio"
+      accessibilityState={{ selected }}
+      accessibilityLabel={DAY_LABELS[day]}
+      // 44px wide x 44px tall keeps every day inside the touch-target floor
+      // while still fitting all seven across a phone.
+      className={`h-11 w-11 items-center justify-center rounded-key ${
+        selected ? 'bg-accent' : 'bg-key'
+      }`}
     >
-      <Text className={`text-xs font-semibold ${selected ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'}`}>
-        {DAY_LABELS[day].slice(0, 3)}
+      <Text className={`font-panel-semi text-code uppercase ${selected ? 'text-accent-on' : 'text-ink-2'}`}>
+        {day}
       </Text>
     </Pressable>
   );
@@ -124,10 +147,12 @@ function TimeButton({ label, value, onPress }: { label: string; value: string; o
     <Pressable
       onPress={onPress}
       android_ripple={ripple}
-      className="flex-1 rounded-lg border border-neutral-300 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800"
+      accessibilityRole="button"
+      accessibilityLabel={`${label} time, currently ${formatTime(value)}`}
+      className="min-h-12 flex-1 justify-center px-3 py-2"
     >
-      <Text className="text-[10px] uppercase text-neutral-400">{label}</Text>
-      <Text className="text-sm font-medium text-neutral-900 dark:text-neutral-50">{formatTime(value)}</Text>
+      <Text className="font-panel-semi text-micro uppercase text-ink-3">{label}</Text>
+      <Text className="font-panel-bold text-item text-ink">{formatTime(value)}</Text>
     </Pressable>
   );
 }

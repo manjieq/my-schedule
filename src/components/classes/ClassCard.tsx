@@ -1,9 +1,9 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Pressable, Switch, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
+import { KEY_REST, useRipple, usePanelColors } from '@/lib/theme';
 import { slotLabel } from '@/lib/time';
-import { ACCENT, ICON_MUTED, useRipple } from '@/lib/theme';
 import type { ClassEntry } from '@/lib/models';
 
 interface ClassCardProps {
@@ -18,6 +18,15 @@ interface ClassCardProps {
   onDelete: () => void;
 }
 
+/** One class on the bench.
+ *
+ *  A called class is a keycap: it stands proud of the chassis on the same hard
+ *  offset shadow the board's blocks and the tab keys use. An omitted one drops
+ *  into the body as a recess and loses its ink. That is the whole state
+ *  indicator — you can read it from across the room, before any text.
+ *
+ *  The anodized inlay down the leading edge is the same mark the board uses, so
+ *  a class is recognisable in both places by the same device. */
 export function ClassCard({
   classEntry,
   color,
@@ -28,60 +37,97 @@ export function ClassCard({
   onDelete,
 }: ClassCardProps) {
   const ripple = useRipple();
+  const c = usePanelColors();
 
   return (
     <Animated.View entering={FadeInDown.duration(260).delay(Math.min(index, 8) * 35)}>
-      <Pressable
-        onPress={onPress}
-        android_ripple={ripple}
-        className="mx-4 mb-3 flex-row items-center gap-3 rounded-2xl bg-white p-4 shadow-sm dark:bg-neutral-900"
-      >
-        <View className="h-10 w-1.5 rounded-full" style={{ backgroundColor: color }} />
-
-        <View className="flex-1 gap-0.5">
-          <Text className="text-lg font-bold text-neutral-900 dark:text-neutral-50" numberOfLines={1}>
-            {classEntry.name}
-          </Text>
-          {classEntry.location ? (
-            <View className="flex-row items-center gap-1">
-              <Ionicons name="location-outline" size={12} color={ICON_MUTED} />
-              <Text className="text-sm text-neutral-500 dark:text-neutral-400" numberOfLines={1}>
-                {classEntry.location}
-              </Text>
-            </View>
-          ) : null}
-          {classEntry.instructor ? (
-            <Text className="text-sm text-neutral-500 dark:text-neutral-400" numberOfLines={1}>
-              {classEntry.instructor}
-            </Text>
-          ) : null}
-          <Text className="text-xs text-neutral-400 dark:text-neutral-500" numberOfLines={2}>
-            {classEntry.schedule.length > 0
-              ? classEntry.schedule.map(slotLabel).join(' · ')
-              : 'No meeting time set'}
-          </Text>
-          <Text className="text-xs font-medium text-neutral-500 dark:text-neutral-400">
-            {classEntry.credits} {classEntry.credits === 1 ? 'credit' : 'credits'}
-          </Text>
-        </View>
-
-        <View className="items-center gap-2">
-          <Switch
-            value={included}
-            onValueChange={onToggleIncluded}
-            trackColor={{ true: '#c4b5fd' }}
-            thumbColor={included ? ACCENT : undefined}
+      <View className="mb-2 flex-row items-stretch gap-1.5">
+        <Pressable
+          onPress={onPress}
+          android_ripple={ripple}
+          accessibilityRole="button"
+          accessibilityLabel={`Edit ${classEntry.name}`}
+          className={`flex-1 flex-row items-center overflow-hidden rounded-key py-3 pl-4 pr-3 ${
+            included ? 'bg-key' : 'bg-well'
+          }`}
+          style={[
+            { borderTopWidth: 1, borderTopColor: included ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.10)' },
+            included ? KEY_REST : null,
+          ]}
+        >
+          {/* the anodized inlay */}
+          <View
+            className="absolute bottom-2 left-0 top-2 w-[3px] rounded-r-full"
+            style={{ backgroundColor: color, opacity: included ? 1 : 0.4 }}
           />
-          <Pressable
-            onPress={onDelete}
-            hitSlop={10}
-            android_ripple={{ ...ripple, borderless: true, radius: 20 }}
-            className="p-2"
+
+          <View className="flex-1 pr-2">
+            {/* No panel face here: class names are the user's own Korean
+                content, which Chivo does not carry. See PRODUCT.md. */}
+            <Text
+              className={`text-item font-bold ${included ? 'text-ink' : 'text-ink-3'}`}
+              numberOfLines={1}
+            >
+              {classEntry.name}
+            </Text>
+
+            <Text className="mt-1 font-panel-semi text-code uppercase text-ink-2" numberOfLines={2}>
+              {classEntry.schedule.length > 0
+                ? classEntry.schedule.map(slotLabel).join('  ·  ')
+                : 'no meeting time set'}
+            </Text>
+
+            {classEntry.location || classEntry.instructor ? (
+              <Text className="mt-0.5 text-meta text-ink-2" numberOfLines={1}>
+                {[classEntry.location, classEntry.instructor].filter(Boolean).join('  ·  ')}
+              </Text>
+            ) : null}
+          </View>
+
+          <Text
+            className={`mr-3 font-panel-bold text-meta ${included ? 'text-accent-hi' : 'text-ink-3'}`}
+            style={{ fontVariant: ['tabular-nums'] }}
           >
-            <Ionicons name="trash-outline" size={18} color={ICON_MUTED} />
+            {classEntry.credits.toFixed(1)}
+          </Text>
+
+          {/* The CALL control: a rocker switch, not the platform Switch. The
+              slot is a recess cut into the key face and the thumb is a smaller
+              keycap sitting in it, so the control is made of the same two
+              materials as everything else on the panel. Filled in the trim when
+              called, which is the only state colour this world spends. */}
+          <Pressable
+            onPress={onToggleIncluded}
+            accessibilityRole="switch"
+            accessibilityState={{ checked: included }}
+            accessibilityLabel={`${classEntry.name}, ${included ? 'called' : 'omitted'}`}
+            hitSlop={10}
+            className="h-[22px] w-[38px] justify-center rounded-well"
+            style={{ backgroundColor: included ? c.accentLo : c.well }}
+          >
+            <View
+              className="h-[18px] w-[17px] rounded-[4px]"
+              style={{
+                marginLeft: included ? 19 : 2,
+                backgroundColor: included ? c.accentHi : c.key1,
+                ...KEY_REST,
+              }}
+            />
           </Pressable>
-        </View>
-      </Pressable>
+        </Pressable>
+
+        {/* Its own cell, outside the key — deleting is not part of pressing the
+            class, and on a panel a destructive control never shares a cap. */}
+        <Pressable
+          onPress={onDelete}
+          android_ripple={{ ...ripple, borderless: true, radius: 22 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Delete ${classEntry.name}`}
+          className="w-11 items-center justify-center"
+        >
+          <Ionicons name="trash-outline" size={17} color={c.ink3} />
+        </Pressable>
+      </View>
     </Animated.View>
   );
 }

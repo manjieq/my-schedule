@@ -1,31 +1,42 @@
+// The board — the week laid out as a production rundown.
+//
 // Ported from course-scheduler-mobile's components/schedule/ScheduleGrid.tsx
 // (Course -> ClassEntry). Measures its own available width/height and
 // shrinks hour rows / day columns — down to a floor — to try to fit the
 // whole week without scrolling, rather than always defaulting to the
 // widest/tallest size and forcing the user to scroll.
+//
+// Two things were added for the Call Sheet direction, both serving the
+// glance-first use in PRODUCT.md: the current day's column is struck in the
+// header and washed in the body, and a red NOW rule sits at the current time.
+// Both are suppressed on the exported PNG, where "today" is meaningless to
+// whoever receives it.
 import { useState } from 'react';
 import { ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { DAY_LABELS } from '@/lib/models';
-import type { ClassEntry, ConflictPair, TimeSlot } from '@/lib/models';
+import { DAYS_OF_WEEK } from '@/lib/models';
+import type { ClassEntry, ConflictPair, DayOfWeek, TimeSlot } from '@/lib/models';
 import { computeScheduleDays, computeScheduleHourRange, toMinutes } from '@/lib/time';
 import { layoutOverlaps, type LayoutInput } from '@/lib/layout';
 
 import { EventBlock } from './EventBlock';
 
-const GUTTER_WIDTH = 48;
+const GUTTER_WIDTH = 30;
 const DEFAULT_DAY_COLUMN_WIDTH = 104;
 const MIN_DAY_COLUMN_WIDTH = 64;
-// onLayout reports the root View's border-box width, but its border/rounded
-// corners eat a couple of pixels the raw measurement doesn't account for —
-// without this, columns sized to exactly fill the measured width could end
-// up a hair too wide and get visibly nicked at the edge.
-const EDGE_SAFETY_MARGIN = 8;
-const DEFAULT_HOUR_PX = 48;
-const MIN_HOUR_PX = 28;
-// Rough height of the day-label header row — subtracted from maxBodyHeight
-// so the shrink math is against the whole grid's footprint.
-const HEADER_ROW_HEIGHT = 28;
+// onLayout reports the root View's border-box width, but its border eats a
+// couple of pixels the raw measurement doesn't account for — without this,
+// columns sized to exactly fill the measured width could end up a hair too
+// wide and get visibly nicked at the edge.
+const EDGE_SAFETY_MARGIN = 4;
+const DEFAULT_HOUR_PX = 62;
+const MIN_HOUR_PX = 34;
+// Height of the day-label header row — subtracted from maxBodyHeight so the
+// shrink math is against the whole board's footprint.
+const HEADER_ROW_HEIGHT = 34;
+// Below this an item has no room for its location line without colliding
+// with its own name.
+const DENSE_BLOCK_HEIGHT = 86;
 
 interface ScheduleGridProps {
   classes: ClassEntry[];
@@ -35,6 +46,8 @@ interface ScheduleGridProps {
   /** Available vertical space for the whole grid component (header row
    *  included), if known. Omit to always use DEFAULT_HOUR_PX. */
   maxBodyHeight?: number;
+  /** Today's strike and the NOW rule. Off for the export plate. */
+  showNow?: boolean;
 }
 
 interface EventEntry {
@@ -42,20 +55,59 @@ interface EventEntry {
   slot: TimeSlot;
 }
 
-export function ScheduleGrid({ classes, colorFor, conflicts = [], differs, maxBodyHeight }: ScheduleGridProps) {
+/** JS getDay() is Sunday-indexed; DAYS_OF_WEEK is Monday-first. */
+function todayKey(now: Date): DayOfWeek {
+  return DAYS_OF_WEEK[(now.getDay() + 6) % 7];
+}
+
+/** Date number for each weekday of the week `now` falls in, so the header can
+ *  read MON 17 / TUE 18 the way a dated sheet does. */
+function weekDates(now: Date): Record<DayOfWeek, number> {
+  const monday = new Date(now);
+  monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+  const out = {} as Record<DayOfWeek, number>;
+  DAYS_OF_WEEK.forEach((day, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    out[day] = d.getDate();
+  });
+  return out;
+}
+
+export function ScheduleGrid({
+  classes,
+  colorFor,
+  conflicts = [],
+  differs,
+  maxBodyHeight,
+  showNow = true,
+}: ScheduleGridProps) {
   // Hooks first, before the empty-state early return below — rules of hooks.
   const [containerWidth, setContainerWidth] = useState(0);
   const handleContainerLayout = (e: LayoutChangeEvent) => setContainerWidth(e.nativeEvent.layout.width);
+  // Measured rather than assumed: HEADER_ROW_HEIGHT is only the estimate the
+  // shrink math needs before first layout, but the NOW rule is positioned
+  // against the real header, and a few pixels out reads as a wrong time.
+  const [headerHeight, setHeaderHeight] = useState(HEADER_ROW_HEIGHT);
+  const handleHeaderLayout = (e: LayoutChangeEvent) => setHeaderHeight(e.nativeEvent.layout.height);
 
   if (classes.length === 0) {
     return (
-      <View className="mx-4 items-center justify-center rounded-xl border border-dashed border-neutral-300 p-6 dark:border-neutral-700">
-        <Text className="text-center text-sm text-neutral-500 dark:text-neutral-400">
-          No classes included — add classes and include them to generate a schedule.
+      <View className="mx-4 rounded-well bg-well px-6 py-10">
+        <Text className="text-center font-panel-semi text-code uppercase text-ink-3">
+          nothing called this week
+        </Text>
+        <Text className="mt-2 text-center text-meta text-ink-2">
+          Add classes and include them to build the sheet.
         </Text>
       </View>
     );
   }
+
+  const now = new Date();
+  const today = todayKey(now);
+  const dates = weekDates(now);
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
   const days = computeScheduleDays(classes);
 
@@ -81,33 +133,60 @@ export function ScheduleGrid({ classes, colorFor, conflicts = [], differs, maxBo
 
   const isConflicted = (slot: TimeSlot) => conflicts.some((c) => c.slotA === slot || c.slotB === slot);
 
+  const nowTop = (nowMinutes - START_HOUR * 60) * pxPerMin;
+  const nowVisible = showNow && nowTop >= 0 && nowTop <= bodyHeight;
+  const nowLabel = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+
   return (
     <View
-      className="mx-4 overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800"
+      className="mx-4"
+      // borderStyle is a whole-view property in React Native and was coming
+      // through dashed on device; say it outright.
+      style={{ borderStyle: 'solid' }}
       onLayout={handleContainerLayout}
     >
-      <ScrollView horizontal showsHorizontalScrollIndicator>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View>
-          <View className="flex-row border-b border-neutral-200 dark:border-neutral-800">
+          {/* --- day header: today is struck, the way a sheet marks the day
+                  it was issued for -------------------------------------- */}
+          <View className="flex-row border-b border-hair" onLayout={handleHeaderLayout}>
             <View style={{ width: GUTTER_WIDTH }} />
-            {days.map((day) => (
-              <View key={day} style={{ width: DAY_COLUMN_WIDTH }} className="items-center py-1.5">
-                <Text className="text-[11px] font-semibold text-neutral-500 dark:text-neutral-400">
-                  {DAY_LABELS[day]}
-                </Text>
-              </View>
-            ))}
+            {days.map((day) => {
+              const isToday = showNow && day === today;
+              return (
+                <View
+                  key={day}
+                  style={{ width: DAY_COLUMN_WIDTH }}
+                  className={`items-center py-[5px] ${isToday ? 'bg-today-wash' : ''}`}
+                >
+                  <Text
+                    className={`font-panel-semi text-code uppercase ${isToday ? 'text-accent' : 'text-ink-3'}`}
+                  >
+                    {day}
+                  </Text>
+                  <Text
+                    className={`font-panel-bold text-meta ${isToday ? 'text-accent-hi' : 'text-ink-2'}`}
+                  >
+                    {dates[day]}
+                  </Text>
+                </View>
+              );
+            })}
           </View>
 
           <View className="flex-row">
+            {/* --- hour gutter, filled in on the typewriter -------------- */}
             <View style={{ width: GUTTER_WIDTH, height: bodyHeight }}>
               {Array.from({ length: totalHours + 1 }, (_, i) => START_HOUR + i).map((hour) => (
                 <Text
                   key={hour}
-                  className="absolute text-[10px] text-neutral-400 dark:text-neutral-500"
-                  style={{ top: (hour - START_HOUR) * HOUR_PX - 5, left: 4 }}
+                  className="absolute font-panel-semi text-tag text-ink-2"
+                  style={{
+                    top: Math.min((hour - START_HOUR) * HOUR_PX + 2, bodyHeight - 9),
+                    right: 5,
+                  }}
                 >
-                  {hour}:00
+                  {String(hour).padStart(2, '0')}
                 </Text>
               ))}
             </View>
@@ -126,13 +205,38 @@ export function ScheduleGrid({ classes, colorFor, conflicts = [], differs, maxBo
                 }
               }
               const positioned = layoutOverlaps(entries);
+              const isToday = showNow && day === today;
 
               return (
                 <View
                   key={day}
-                  style={{ width: DAY_COLUMN_WIDTH, height: bodyHeight }}
-                  className="border-l border-neutral-100 dark:border-neutral-900"
+                  style={{
+                    width: DAY_COLUMN_WIDTH - 4,
+                    height: bodyHeight,
+                    marginRight: 4,
+                    borderTopWidth: 1,
+                    borderTopColor: 'rgba(0,0,0,0.10)',
+                  }}
+                  className="overflow-hidden rounded-well bg-well"
                 >
+                  {/* today is a wash laid over the recess, not a different
+                      recess — the column is still a cut in the same body */}
+                  {isToday ? <View className="absolute inset-0 bg-today-wash" /> : null}
+                  <View
+                    style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 2 }}
+                    className={isToday ? 'bg-today-edge' : ''}
+                  />
+                  {/* ruled lines: solid on the hour, dotted on the half */}
+                  {Array.from({ length: totalHours * 2 }, (_, i) => i).map((i) => (
+                    <View
+                      key={i}
+                      className={`absolute left-0 right-0 border-t ${
+                        i % 2 === 0 ? 'border-hair' : 'border-dotted border-hair'
+                      }`}
+                      style={{ top: (i * HOUR_PX) / 2 }}
+                    />
+                  ))}
+
                   {positioned.map((item) => {
                     const top = (item.start - START_HOUR * 60) * pxPerMin;
                     const height = Math.max((item.end - item.start) * pxPerMin - 2, 16);
@@ -150,6 +254,7 @@ export function ScheduleGrid({ classes, colorFor, conflicts = [], differs, maxBo
                         color={colorFor(item.data.classEntry.id)}
                         conflicted={isConflicted(item.data.slot)}
                         differs={differs?.has(item.data.classEntry.id)}
+                        dense={height < DENSE_BLOCK_HEIGHT}
                         position={{
                           top,
                           height,
@@ -163,6 +268,28 @@ export function ScheduleGrid({ classes, colorFor, conflicts = [], differs, maxBo
               );
             })}
           </View>
+
+          {/* --- the NOW rule, drawn over every column ------------------- */}
+          {nowVisible ? (
+            <View
+              pointerEvents="none"
+              className="absolute left-0 right-0 flex-row items-center"
+              style={{ top: headerHeight + nowTop - 6 }}
+            >
+              {/* The time-code, in the gutter where every other time on this
+                  sheet is printed. Without it the rule was an unlabelled
+                  hairline that read as a strikethrough on whatever class name
+                  it happened to cross. */}
+              <Text
+                className="font-panel-semi text-tag text-alert"
+                style={{ width: GUTTER_WIDTH, textAlign: 'right', paddingRight: 3 }}
+              >
+                {nowLabel}
+              </Text>
+              <View className="h-[3px] w-[3px] bg-alert" />
+              <View className="h-0 flex-1 border-t-2 border-alert" style={{ borderStyle: 'solid' }} />
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </View>

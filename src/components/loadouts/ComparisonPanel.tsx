@@ -7,8 +7,8 @@
 import { useState } from 'react';
 import { Text, View, type LayoutChangeEvent } from 'react-native';
 
-import { DAY_LABELS } from '@/lib/models';
 import type { ClassEntry, DayOfWeek, TimeSlot } from '@/lib/models';
+import type { RevisionStock } from '@/lib/revisions';
 import { findConflicts, toMinutes } from '@/lib/time';
 import { layoutOverlaps, type LayoutInput } from '@/lib/layout';
 
@@ -38,6 +38,9 @@ interface ComparisonPanelProps {
    *  in this panel's classes but not in this set gets EventBlock's dashed
    *  "differs" treatment. Omit to skip highlighting entirely. */
   sharedClassIds?: Set<string>;
+  /** The coloured stock this loadout was filed on, so a panel is identifiable
+   *  by its paper the way the cards on the Loadouts tab are. */
+  stock?: RevisionStock;
 }
 
 interface EventEntry {
@@ -57,6 +60,7 @@ export function ComparisonPanel({
   days,
   maxHeight,
   sharedClassIds,
+  stock,
 }: ComparisonPanelProps) {
   const conflicts = findConflicts(classes);
   const overLimit = totalCredits > maxCredits;
@@ -79,35 +83,38 @@ export function ComparisonPanel({
   const isConflicted = (slot: TimeSlot) => conflicts.some((c) => c.slotA === slot || c.slotB === slot);
 
   return (
-    <View style={{ width }} className="gap-2">
+    <View style={{ width }} className="gap-1.5">
       <View onLayout={handleTopLayout}>
-        <Text className="text-sm font-bold text-neutral-900 dark:text-neutral-50" numberOfLines={1}>
+        {stock ? (
+          <View className="px-1.5 py-0.5" style={{ backgroundColor: stock.paper }}>
+            <Text className="font-panel-semi text-tag uppercase" style={{ color: stock.ink }} numberOfLines={1}>
+              {stock.name} stock
+            </Text>
+          </View>
+        ) : null}
+        <Text className="mt-1 text-meta font-bold text-ink" numberOfLines={1}>
           {name}
         </Text>
-        <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row flex-wrap gap-x-2">
           <Text
-            className={`text-xs ${
-              overLimit ? 'font-semibold text-red-600 dark:text-red-400' : 'text-neutral-500 dark:text-neutral-400'
-            }`}
+            className={`font-panel-semi text-tag uppercase ${overLimit ? 'text-warn' : 'text-ink-2'}`}
           >
-            {totalCredits} / {maxCredits} credits
+            {totalCredits.toFixed(1)} / {maxCredits.toFixed(1)} cr
           </Text>
           {conflicts.length > 0 && (
-            <Text className="text-xs font-semibold text-amber-600 dark:text-amber-400">
-              {conflicts.length} conflict{conflicts.length > 1 ? 's' : ''}
+            <Text className="font-panel-semi text-tag uppercase text-alert">
+              {conflicts.length} clash{conflicts.length > 1 ? 'es' : ''}
             </Text>
           )}
         </View>
       </View>
 
-      <View className="overflow-hidden rounded-xl border border-neutral-200 dark:border-neutral-800">
-        <View className="flex-row border-b border-neutral-200 dark:border-neutral-800">
+      <View className="border-b border-t border-edge">
+        <View className="flex-row border-b border-edge">
           <View style={{ width: GUTTER_WIDTH }} />
           {days.map((day) => (
             <View key={day} style={{ width: dayWidth }} className="items-center py-1">
-              <Text className="text-[9px] font-semibold text-neutral-500 dark:text-neutral-400">
-                {DAY_LABELS[day].slice(0, 3).toUpperCase()}
-              </Text>
+              <Text className="font-panel-semi text-tag uppercase text-ink-2">{day}</Text>
             </View>
           ))}
         </View>
@@ -117,7 +124,7 @@ export function ComparisonPanel({
             {Array.from({ length: totalHours + 1 }, (_, i) => startHour + i).map((hour) => (
               <Text
                 key={hour}
-                className="absolute text-[8px] text-neutral-400 dark:text-neutral-500"
+                className="absolute font-panel-semi text-tag text-ink-3"
                 style={{ top: (hour - startHour) * HOUR_PX - 4, left: 2 }}
               >
                 {hour}
@@ -144,7 +151,7 @@ export function ComparisonPanel({
               <View
                 key={day}
                 style={{ width: dayWidth, height: bodyHeight }}
-                className="border-l border-neutral-100 dark:border-neutral-900"
+                className="border-l border-hair"
               >
                 {positioned.map((item) => {
                   const top = (item.start - startHour * 60) * pxPerMin;
@@ -159,6 +166,7 @@ export function ComparisonPanel({
                       color={colorFor(item.data.classEntry.id)}
                       conflicted={isConflicted(item.data.slot)}
                       differs={sharedClassIds ? !sharedClassIds.has(item.data.classEntry.id) : false}
+                      dense
                       position={{ top, height, left: `${leftPct}%`, width: `${widthPct}%` }}
                     />
                   );
