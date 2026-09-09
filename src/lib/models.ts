@@ -36,6 +36,12 @@ export interface TimeSlot {
 export interface ClassEntry {
   id: string;
   name: string;
+  /** A short label the user chooses — usually the course code. The board has
+   *  room for about eight characters in a 50-minute block, so a full name is
+   *  always truncated there; this is what gets printed instead when it is set.
+   *  Everywhere with room (the class list, the roster, a loadout) still shows
+   *  `name`. Optional: a class entered without one falls back to the name. */
+  code?: string;
   location?: string;
   credits: number;
   instructor?: string;

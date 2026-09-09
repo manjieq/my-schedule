@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Pressable, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 
@@ -13,13 +14,15 @@ export default function ClassesScreen() {
   const router = useRouter();
   const ripple = useRipple(true);
 
+  // Delete mode. Off on every visit — it is a thing you turn on to tidy up,
+  // never a state the screen sits in.
+  const [deleting, setDeleting] = useState(false);
+
   // The app's one authored press moment: the add bar takes a shallow squeeze,
   // the way a rubber stamp gives before it prints. Kept on the primary action
   // only — scattering this onto every pressable is what the ripple is for.
   const addScale = useSharedValue(1);
   const addStyle = useAnimatedStyle(() => ({ transform: [{ scale: addScale.value }] }));
-
-  const includedCount = state.includedIds.length;
 
 
   // Deleting is one tap away from the row people press constantly, and a
@@ -57,6 +60,14 @@ export default function ClassesScreen() {
     <View className="flex-1">
       <Masthead
         title="CLASSES"
+        actions={[
+          {
+            icon: deleting ? 'close-outline' : 'trash-outline',
+            label: deleting ? 'Done deleting' : 'Delete classes',
+            onPress: () => setDeleting((v) => !v),
+            active: deleting,
+          },
+        ]}
       />
 
       {state.saveError ? (
@@ -70,6 +81,7 @@ export default function ClassesScreen() {
         includedIds={state.includedIds}
         onToggleIncluded={(id) => dispatch({ type: 'TOGGLE_INCLUDED', id })}
         onPressClass={(id) => router.push({ pathname: '/class-form', params: { id } })}
+        deletable={deleting}
         onDeleteClass={handleDeleteClass}
       />
 

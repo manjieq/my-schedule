@@ -22,6 +22,7 @@ interface LoadoutListProps {
   onLoad: (loadout: Loadout) => void;
   onDelete: (id: string) => void;
   onToggleCompare: (id: string) => void;
+  deletable?: boolean;
 }
 
 export function LoadoutList({
@@ -34,6 +35,7 @@ export function LoadoutList({
   onLoad,
   onDelete,
   onToggleCompare,
+  deletable = false,
 }: LoadoutListProps) {
   const ripple = useRipple();
   const c = usePanelColors();
@@ -103,15 +105,20 @@ export function LoadoutList({
                   </Text>
                 </Pressable>
 
-                <Pressable
-                  onPress={() => onDelete(loadout.id)}
-                  android_ripple={ripple}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Delete ${loadout.name}`}
-                  className="h-12 w-12 items-center justify-center rounded-key bg-well"
-                >
-                  <Ionicons name="trash-outline" size={16} color={c.ink3} />
-                </Pressable>
+                {/* Hidden until delete mode is on, for the same reason the
+                    class list hides its own: this cell sat next to LOAD, the
+                    control people press most, and fired on the first tap. */}
+                {deletable ? (
+                  <Pressable
+                    onPress={() => onDelete(loadout.id)}
+                    android_ripple={ripple}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Delete ${loadout.name}`}
+                    className="h-12 w-12 items-center justify-center rounded-key bg-well"
+                  >
+                    <Ionicons name="trash-outline" size={16} color={c.alert} />
+                  </Pressable>
+                ) : null}
               </View>
             }
           />

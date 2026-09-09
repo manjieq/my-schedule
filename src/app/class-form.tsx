@@ -19,6 +19,7 @@ export default function ClassFormScreen() {
   const isEditing = Boolean(existing);
 
   const [name, setName] = useState(existing?.name ?? '');
+  const [code, setCode] = useState(existing?.code ?? '');
   const [location, setLocation] = useState(existing?.location ?? '');
   const [instructor, setInstructor] = useState(existing?.instructor ?? '');
   const [creditsText, setCreditsText] = useState(existing ? String(existing.credits) : '3');
@@ -31,6 +32,7 @@ export default function ClassFormScreen() {
     if (!canSave) return;
     const payload = {
       name: name.trim(),
+      code: code.trim() || undefined,
       location: location.trim() || undefined,
       instructor: instructor.trim() || undefined,
       credits,
@@ -73,6 +75,16 @@ export default function ClassFormScreen() {
       >
         <Field label="Class name">
           <SheetInput value={name} onChangeText={setName} placeholder="암호학" />
+        </Field>
+
+        <Field label="Short code" hint="optional — what the board prints">
+          <SheetInput
+            value={code}
+            onChangeText={setCode}
+            placeholder="CSE3007"
+            autoCapitalize="characters"
+            maxLength={12}
+          />
         </Field>
 
         <Field label="Location">

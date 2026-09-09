@@ -23,6 +23,9 @@ export default function LoadoutsScreen() {
   const router = useRouter();
   const { state, dispatch } = useAppState();
   const [compareIds, setCompareIds] = useState<Set<string>>(new Set());
+
+  // Delete mode. Off on every visit — see the same note on the classes screen.
+  const [deleting, setDeleting] = useState(false);
   const ripple = useRipple(true);
 
   const classesById = useMemo(() => new Map(state.classes.map((c) => [c.id, c])), [state.classes]);
@@ -59,7 +62,22 @@ export default function LoadoutsScreen() {
     router.push('/');
   }
 
+  // A loadout is a saved snapshot the user deliberately made and cannot
+  // rebuild from anything on screen, so deleting one asks first — the same
+  // rule the class list follows.
   function handleDelete(id: string) {
+    const target = state.loadouts.find((l) => l.id === id);
+    Alert.alert(
+      'Delete this loadout?',
+      target ? `"${target.name}" will be removed. This cannot be undone.` : undefined,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: () => confirmDelete(id) },
+      ]
+    );
+  }
+
+  function confirmDelete(id: string) {
     dispatch({ type: 'DELETE_LOADOUT', id });
     setCompareIds((prev) => {
       if (!prev.has(id)) return prev;
@@ -73,7 +91,17 @@ export default function LoadoutsScreen() {
 
   return (
     <View className="flex-1">
-      <Masthead title="LOADOUTS" />
+      <Masthead
+        title="LOADOUTS"
+        actions={[
+          {
+            icon: deleting ? 'close-outline' : 'trash-outline',
+            label: deleting ? 'Done deleting' : 'Delete loadouts',
+            onPress: () => setDeleting((v) => !v),
+            active: deleting,
+          },
+        ]}
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4 pb-10">
         <LoadoutList
@@ -86,6 +114,7 @@ export default function LoadoutsScreen() {
           onLoad={handleLoad}
           onDelete={handleDelete}
           onToggleCompare={toggleCompare}
+          deletable={deleting}
         />
 
         {comparedLoadouts.length >= 2 && (

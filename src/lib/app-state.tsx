@@ -29,8 +29,8 @@ interface AppState {
 
 type Action =
   | { type: 'HYDRATE'; classes: ClassEntry[]; includedIds: string[]; loadouts: Loadout[]; creditCap: number }
-  | { type: 'ADD_CLASS'; name: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
-  | { type: 'UPDATE_CLASS'; id: string; name: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
+  | { type: 'ADD_CLASS'; name: string; code?: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
+  | { type: 'UPDATE_CLASS'; id: string; name: string; code?: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
   | { type: 'DELETE_CLASS'; id: string }
   | { type: 'TOGGLE_INCLUDED'; id: string }
   | { type: 'SET_CREDIT_CAP'; creditCap: number }
@@ -65,6 +65,7 @@ function reducer(state: AppState, action: Action): AppState {
       const classEntry: ClassEntry = {
         id: Crypto.randomUUID(),
         name: action.name,
+        code: action.code,
         location: action.location,
         credits: action.credits,
         instructor: action.instructor,
@@ -85,7 +86,15 @@ function reducer(state: AppState, action: Action): AppState {
         ...state,
         classes: state.classes.map((c) =>
           c.id === action.id
-            ? { ...c, name: action.name, location: action.location, credits: action.credits, instructor: action.instructor, schedule: action.schedule }
+            ? {
+                ...c,
+                name: action.name,
+                code: action.code,
+                location: action.location,
+                credits: action.credits,
+                instructor: action.instructor,
+                schedule: action.schedule,
+              }
             : c
         ),
       };
