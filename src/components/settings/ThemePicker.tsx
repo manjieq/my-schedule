@@ -6,10 +6,13 @@ import type { ThemePreference } from '@/lib/models';
 
 const OPTIONS: { value: ThemePreference; label: string }[] = [
   { value: 'system', label: 'System' },
-  { value: 'light', label: 'Light' },
-  { value: 'dark', label: 'Dark' },
+  { value: 'light', label: 'Stock' },
+  { value: 'dark', label: 'Negative' },
 ];
 
+/** Light and dark are named for what they actually are in this world — the
+ *  printed sheet and its photostat negative — with "System" left plain because
+ *  it names the phone's setting, not the sheet. */
 export function ThemePicker() {
   // Starts at 'system' (the pre-restore default) and is corrected once the
   // saved preference read comes back — app/_layout.tsx already blocks
@@ -17,7 +20,7 @@ export function ThemePicker() {
   // ever shows the already-correct value.
   const [preference, setPreference] = useState<ThemePreference>('system');
   const rippleNeutral = useRipple(false);
-  const rippleOnColor = useRipple(true);
+  const rippleOnFill = useRipple(true);
 
   useEffect(() => {
     getThemePreference().then(setPreference);
@@ -33,20 +36,22 @@ export function ThemePicker() {
   }
 
   return (
-    <View className="flex-row gap-2">
-      {OPTIONS.map((option) => {
+    <View className="flex-row overflow-hidden rounded-key border border-edge">
+      {OPTIONS.map((option, i) => {
         const selected = preference === option.value;
         return (
           <Pressable
             key={option.value}
             onPress={() => handleSelect(option.value)}
-            android_ripple={selected ? rippleOnColor : rippleNeutral}
-            className={`flex-1 items-center rounded-xl py-2.5 ${
-              selected ? 'bg-violet-600' : 'bg-neutral-100 dark:bg-neutral-900'
+            android_ripple={selected ? rippleOnFill : rippleNeutral}
+            accessibilityRole="radio"
+            accessibilityState={{ selected }}
+            className={`min-h-12 flex-1 items-center justify-center ${i > 0 ? 'border-l border-edge' : ''} ${
+              selected ? 'bg-accent' : 'bg-key'
             }`}
           >
             <Text
-              className={`text-sm font-medium ${selected ? 'text-white' : 'text-neutral-600 dark:text-neutral-400'}`}
+              className={`font-panel-semi text-code uppercase ${selected ? 'text-accent-on' : 'text-ink-2'}`}
             >
               {option.label}
             </Text>

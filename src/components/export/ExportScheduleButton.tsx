@@ -4,7 +4,7 @@ import ViewShot, { type ViewShotRef } from 'react-native-view-shot';
 
 import { getErrorMessage } from '@/lib/errors';
 import { saveImageToGallery, shareImage } from '@/lib/export-image';
-import { ACCENT, useRipple } from '@/lib/theme';
+import { useRipple, usePanelColors } from '@/lib/theme';
 import type { ClassEntry, ConflictPair } from '@/lib/models';
 
 import { ScheduleGrid } from '../schedule/ScheduleGrid';
@@ -47,7 +47,7 @@ export function ExportScheduleButton({ classes, colorFor, conflicts }: ExportSch
   }
 
   return (
-    <View className="mx-4 flex-row gap-3">
+    <View className="mx-4 flex-row gap-2">
       <ExportButton
         label="Save image"
         busy={isBusy === 'save'}
@@ -61,11 +61,21 @@ export function ExportScheduleButton({ classes, colorFor, conflicts }: ExportSch
         onPress={() => handleExport('share')}
       />
 
-      {/* Off-screen full-width render used only as the capture source. */}
+      {/* Off-screen full-width render used only as the capture source. The
+          board's "today" strike and NOW rule are suppressed here: the image
+          gets sent to someone else, for whom today is not today. */}
       <View pointerEvents="none" style={{ position: 'absolute', left: -9999, top: 0, width: EXPORT_WIDTH }}>
         <ViewShot ref={shotRef} options={{ format: 'png', quality: 1 }}>
-          <View className="bg-white p-4 dark:bg-black" style={{ width: EXPORT_WIDTH }}>
-            <ScheduleGrid classes={classes} colorFor={colorFor} conflicts={conflicts} />
+          {/* The plate is the sheet's own stock, so the PNG comes out in
+              whichever scheme the user is reading in — a dark-mode user
+              exporting a blazing white sheet would be the surprise. */}
+          <View className="bg-stock p-5" style={{ width: EXPORT_WIDTH }}>
+            <ScheduleGrid
+              classes={classes}
+              colorFor={colorFor}
+              conflicts={conflicts}
+              showNow={false}
+            />
           </View>
         </ViewShot>
       </View>
@@ -85,17 +95,19 @@ function ExportButton({
   onPress: () => void;
 }) {
   const ripple = useRipple();
+  const c = usePanelColors();
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       android_ripple={ripple}
-      className="flex-1 items-center rounded-xl border border-neutral-300 bg-white py-2.5 disabled:opacity-40 dark:border-neutral-700 dark:bg-neutral-900"
+      accessibilityRole="button"
+      className="min-h-12 flex-1 items-center justify-center rounded-key border border-edge bg-key disabled:opacity-40"
     >
       {busy ? (
-        <ActivityIndicator color={ACCENT} />
+        <ActivityIndicator color={c.ink} />
       ) : (
-        <Text className="text-sm font-medium text-neutral-700 dark:text-neutral-300">{label}</Text>
+        <Text className="font-panel-semi text-code uppercase text-ink">{label}</Text>
       )}
     </Pressable>
   );

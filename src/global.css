@@ -2,12 +2,133 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   The Bench Instrument — colour tokens.
+
+   The world is a physical desk calculator. The phone screen is the instrument's
+   chassis: brushed steel with a machined edge, corner screws, keycaps that
+   stand proud of the body, and one recessed LCD well. Every colour the app uses
+   is named here once, for both schemes, and referenced through
+   tailwind.config.js. Components say `bg-key`, never `bg-neutral-800`.
+
+   Dark is the instrument at rest: near-black steel with gold trim, and a
+   backlit LCD that glows green. Light is a Casio fx-570ES: silver-grey body,
+   blue trim sampled off the hardware (#55678f, its SHIFT key), and a
+   *reflective* LCD — dark segments on pale grey-green, the way the real panel
+   looks in daylight. The light scheme is therefore not the dark one lightened;
+   the LCD inverts which side of it carries the ink.
+
+   The dark block is a media query rather than a `.dark` class because that is
+   what the app's theme override already drives: lib/theme.ts calls NativeWind's
+   colorScheme.set(), which calls React Native's Appearance.setColorScheme()
+   underneath, and that is what prefers-color-scheme resolves against on native.
+
+   Values that a React Native API needs as a literal are mirrored in
+   src/lib/theme.ts. Change both in the same edit.
+--------------------------------------------------------------------------- */
+
 :root {
-  --font-display:
-    Spline Sans, Inter, ui-sans-serif, system-ui, sans-serif, Apple Color Emoji, Segoe UI Emoji,
-    Segoe UI Symbol, Noto Color Emoji;
-  --font-mono:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace;
-  --font-rounded: 'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif;
-  --font-serif: Georgia, 'Times New Roman', serif;
+  /* --- the chassis ------------------------------------------------------ */
+  /* Three stops of one brushed-steel gradient, lightest at the top edge.
+     `stock` is the app's ground and is always chassis-2. */
+  --chassis-1: #dedcd4;
+  --chassis-2: #cbc9c0;
+  --chassis-3: #b8b6ac;
+  --stock: #cbc9c0;
+  --edge: #a3a198; /* the machined ring around the body */
+
+  /* --- keycaps ---------------------------------------------------------- */
+  /* Anything the user can press stands proud of the chassis: class blocks,
+     list rows, tabs, buttons. Two stops, lit from above. */
+  --key-1: #f0eee7;
+  --key-2: #dedbd2;
+  --well: #c6c4bb; /* the opposite of a keycap: a recess. Grid columns,
+                      excluded classes, the toggle slot. */
+
+  /* --- ink -------------------------------------------------------------- */
+  --ink: #23262a; /* key legends, class names */
+  --ink-2: rgba(35, 38, 42, 0.58); /* codes, rooms, meta */
+  --ink-3: rgba(35, 38, 42, 0.4); /* placeholders, disabled, empty states */
+  --hair: rgba(35, 38, 42, 0.08); /* hour lines, column edges */
+
+  /* --- trim ------------------------------------------------------------- */
+  /* Sampled from a Casio fx-570ES PLUS SHIFT key. Trim, never paint: it fills
+     exactly one key per screen and outlines the LCD. */
+  --accent: #55678f;
+  --accent-hi: #6d7fa8;
+  --accent-lo: #3f4f73;
+  --on-accent: #f4f8fb; /* legend on an accent-filled key */
+
+  /* --- the readout ------------------------------------------------------ */
+  /* Reflective in light: the segments are the dark part. Unlit segments stay
+     faintly visible, which is what makes it read as a real LCD. */
+  --lcd: #aab79f;
+  --lcd-2: #98a78d;
+  --seg-on: #1b2a1e;
+  --seg-off: rgba(27, 42, 30, 0.08);
+  --lcd-label: rgba(27, 42, 30, 0.62);
+  --lcd-glow: transparent; /* a daylight LCD does not emit */
+
+  /* --- hardware --------------------------------------------------------- */
+  --screw-1: #f2f1ec;
+  --screw-2: #9a988e;
+
+  /* --- status ----------------------------------------------------------- */
+  /* Status is spoken by the LCD (see --seg-on) wherever it can be. These two
+     are for the cases that cannot go through it: a form error, an over-cap
+     warning. */
+  --alert: #c8102e;
+  --warn: #a86400;
+  --alert-wash: #f0dcdf; /* the ground under an error banner */
+  --warn-wash: #ece0c6; /* the ground under an over-cap warning */
+
+  /* --- today ------------------------------------------------------------ */
+  /* The current day's column, tinted with the trim colour rather than a
+     fifth hue — the instrument only owns one accent. */
+  --today-wash: rgba(85, 103, 143, 0.055);
+  --today-edge: rgba(85, 103, 143, 0.28);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --chassis-1: #3a3b3d;
+    --chassis-2: #232427;
+    --chassis-3: #17181a;
+    --stock: #232427;
+    --edge: #4c4d50;
+
+    --key-1: #2c2d30;
+    --key-2: #1c1d1f;
+    --well: #141517;
+
+    --ink: #ece7d8; /* warm off-white, not pure white — this is a metal world */
+    --ink-2: rgba(236, 231, 216, 0.42);
+    --ink-3: rgba(236, 231, 216, 0.28);
+    --hair: rgba(255, 255, 255, 0.045);
+
+    /* Instrument gold. Rare by design; that rarity is what reads as trim. */
+    --accent: #c7a455;
+    --accent-hi: #e8cd8a;
+    --accent-lo: #9c8143;
+    --on-accent: #201804;
+
+    /* Backlit: the segments emit and the well is dark glass. */
+    --lcd: #1c2b22;
+    --lcd-2: #12201a;
+    --seg-on: #8fe3a0;
+    --seg-off: rgba(143, 227, 160, 0.09);
+    --lcd-label: rgba(143, 227, 160, 0.55);
+    --lcd-glow: rgba(143, 227, 160, 0.55);
+
+    --screw-1: #6b6c6f;
+    --screw-2: #202123;
+
+    --alert: #f5354f;
+    --warn: #ffc233;
+    --alert-wash: #2b1014;
+    --warn-wash: #2a2109;
+
+    --today-wash: rgba(199, 164, 85, 0.05);
+    --today-edge: rgba(199, 164, 85, 0.26);
+  }
 }

@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import { useComparisonLayout } from '@/lib/loadout-compare';
+import { revisionStock } from '@/lib/revisions';
 import type { ClassEntry, Loadout } from '@/lib/models';
 
 import { ComparisonPanel } from './ComparisonPanel';
@@ -20,9 +21,18 @@ interface LoadoutComparisonViewProps {
   classesById: Map<string, ClassEntry>;
   maxCredits: number;
   colorFor: (classId: string) => string;
+  /** Index of each compared loadout in the full saved list, so a panel shows
+   *  the same revision stock as its card above. */
+  stockIndexById: Map<string, number>;
 }
 
-export function LoadoutComparisonView({ loadouts, classesById, maxCredits, colorFor }: LoadoutComparisonViewProps) {
+export function LoadoutComparisonView({
+  loadouts,
+  classesById,
+  maxCredits,
+  colorFor,
+  stockIndexById,
+}: LoadoutComparisonViewProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const handleLayout = (e: LayoutChangeEvent) => setContainerWidth(e.nativeEvent.layout.width);
 
@@ -49,16 +59,19 @@ export function LoadoutComparisonView({ loadouts, classesById, maxCredits, color
         endHour={endHour}
         days={days}
         sharedClassIds={sharedClassIds}
+        stock={revisionStock(stockIndexById.get(loadout.id) ?? i)}
       />
     ));
   }
 
   return (
-    <View className="mt-4 gap-2" onLayout={handleLayout}>
-      <Text className="text-sm font-semibold text-neutral-900 dark:text-neutral-50">Comparing {count} loadouts</Text>
-      <Text className="text-[11px] text-neutral-500 dark:text-neutral-400">
-        Dashed outline = not in every loadout shown ({sharedClassIds.size} class
-        {sharedClassIds.size === 1 ? '' : 'es'} shared by all)
+    <View className="mt-4" onLayout={handleLayout}>
+      <Text className="border-b border-edge pb-1 font-panel-semi text-micro uppercase text-ink-2">
+        Comparing {count} loadouts
+      </Text>
+      <Text className="mb-2 mt-1.5 font-panel-semi text-code text-ink-3">
+        Dashed edge = not in every loadout shown · {sharedClassIds.size} class
+        {sharedClassIds.size === 1 ? '' : 'es'} in all
       </Text>
       {fitsEven ? (
         <View className="flex-row gap-3">{renderPanels()}</View>

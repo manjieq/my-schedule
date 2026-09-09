@@ -1,8 +1,9 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text } from 'react-native';
 
 import { TimeSlotEditor } from '@/components/classes/TimeSlotEditor';
+import { Field, SheetInput } from '@/components/common/SheetField';
 import { useAppState } from '@/lib/app-state';
 import { useRipple } from '@/lib/theme';
 import type { TimeSlot } from '@/lib/models';
@@ -12,7 +13,7 @@ export default function ClassFormScreen() {
   const { state, dispatch } = useAppState();
   const router = useRouter();
   const ripple = useRipple();
-  const rippleOnColor = useRipple(true);
+  const rippleOnFill = useRipple(true);
 
   const existing = useMemo(() => state.classes.find((c) => c.id === id), [state.classes, id]);
   const isEditing = Boolean(existing);
@@ -45,7 +46,7 @@ export default function ClassFormScreen() {
 
   function handleDelete() {
     if (!existing) return;
-    Alert.alert('Delete class?', `This removes "${existing.name}" from your list.`, [
+    Alert.alert('Delete class?', `This removes “${existing.name}” from your list.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -59,75 +60,65 @@ export default function ClassFormScreen() {
   }
 
   return (
-    <ScrollView className="flex-1 bg-neutral-50 dark:bg-black" contentContainerClassName="gap-4 p-4 pb-10">
-      <Field label="Class name">
-        <TextInput
-          value={name}
-          onChangeText={setName}
-          placeholder="e.g. Intro to Psychology"
-          placeholderTextColor="#9ca3af"
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-50"
-        />
-      </Field>
-
-      <Field label="Location">
-        <TextInput
-          value={location}
-          onChangeText={setLocation}
-          placeholder="e.g. Building 4, Room 201"
-          placeholderTextColor="#9ca3af"
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-50"
-        />
-      </Field>
-
-      <Field label="Instructor (optional)">
-        <TextInput
-          value={instructor}
-          onChangeText={setInstructor}
-          placeholder="e.g. Dr. Smith"
-          placeholderTextColor="#9ca3af"
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-50"
-        />
-      </Field>
-
-      <Field label="Credits">
-        <TextInput
-          value={creditsText}
-          onChangeText={setCreditsText}
-          keyboardType="decimal-pad"
-          placeholder="3"
-          placeholderTextColor="#9ca3af"
-          className="rounded-xl border border-neutral-300 bg-white px-4 py-3 text-base text-neutral-900 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-50"
-        />
-      </Field>
-
-      <Field label="Meeting times">
-        <TimeSlotEditor slots={schedule} onChange={setSchedule} />
-      </Field>
-
-      <Pressable
-        onPress={handleSave}
-        disabled={!canSave}
-        android_ripple={rippleOnColor}
-        className="mt-2 items-center rounded-xl bg-violet-600 py-3.5 disabled:opacity-40"
+    // Without this the keyboard covers the credits field and the meeting-time
+    // editor on a short phone. The app had no keyboard handling at all before.
+    <KeyboardAvoidingView
+      className="flex-1 bg-stock"
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="gap-5 p-4 pb-16"
+        keyboardShouldPersistTaps="handled"
       >
-        <Text className="text-base font-semibold text-white">{isEditing ? 'Save changes' : 'Add class'}</Text>
-      </Pressable>
+        <Field label="Class name">
+          <SheetInput value={name} onChangeText={setName} placeholder="암호학" />
+        </Field>
 
-      {isEditing ? (
-        <Pressable onPress={handleDelete} android_ripple={ripple} className="items-center rounded-md py-2">
-          <Text className="text-sm font-medium text-red-600 dark:text-red-400">Delete class</Text>
+        <Field label="Location">
+          <SheetInput value={location} onChangeText={setLocation} placeholder="Y317-0406 ERICA" />
+        </Field>
+
+        <Field label="Instructor" hint="optional">
+          <SheetInput value={instructor} onChangeText={setInstructor} placeholder="오희국" />
+        </Field>
+
+        <Field label="Credits">
+          <SheetInput
+            value={creditsText}
+            onChangeText={setCreditsText}
+            keyboardType="decimal-pad"
+            placeholder="3"
+          />
+        </Field>
+
+        <Field label="Meeting times" hint="a class can meet more than once a week">
+          <TimeSlotEditor slots={schedule} onChange={setSchedule} />
+        </Field>
+
+        <Pressable
+          onPress={handleSave}
+          disabled={!canSave}
+          android_ripple={rippleOnFill}
+          accessibilityRole="button"
+          className="mt-1 min-h-12 items-center justify-center rounded-key bg-accent disabled:opacity-40"
+        >
+          <Text className="font-panel-bold text-meta uppercase text-accent-on">
+            {isEditing ? 'Save changes' : 'Add class'}
+          </Text>
         </Pressable>
-      ) : null}
-    </ScrollView>
-  );
-}
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <View className="gap-1.5">
-      <Text className="text-sm font-medium text-neutral-600 dark:text-neutral-400">{label}</Text>
-      {children}
-    </View>
+        {isEditing ? (
+          <Pressable
+            onPress={handleDelete}
+            android_ripple={ripple}
+            accessibilityRole="button"
+            className="min-h-12 items-center justify-center rounded-key border border-alert"
+          >
+            <Text className="font-panel-semi text-code uppercase text-alert">Delete class</Text>
+          </Pressable>
+        ) : null}
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }

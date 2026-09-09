@@ -1,4 +1,5 @@
-import { FlatList } from 'react-native';
+import { useMemo } from 'react';
+import { FlatList, Text, View } from 'react-native';
 
 import { EmptyState } from '@/components/common/EmptyState';
 import { buildColorMap } from '@/lib/color';
@@ -14,15 +15,23 @@ interface ClassListProps {
   onDeleteClass: (id: string) => void;
 }
 
-export function ClassList({ classes, includedIds, onToggleIncluded, onPressClass, onDeleteClass }: ClassListProps) {
-  const colorMap = buildColorMap(classes);
+export function ClassList({
+  classes,
+  includedIds,
+  onToggleIncluded,
+  onPressClass,
+  onDeleteClass,
+}: ClassListProps) {
+  // Memoized — this used to rebuild the whole colour map on every render of
+  // every keystroke-driven parent.
+  const colorMap = useMemo(() => buildColorMap(classes), [classes]);
 
   if (classes.length === 0) {
     return (
       <EmptyState
-        icon="calendar-outline"
-        title="No classes yet"
-        message="Tap the + button to add your first class — name, place, and when it meets."
+        icon="document-outline"
+        title="No classes entered"
+        message="Add your first class — its name, where it meets, how many credits it carries, and the times it runs. A loadout is a saved combination of these you can compare against others."
       />
     );
   }
@@ -31,11 +40,13 @@ export function ClassList({ classes, includedIds, onToggleIncluded, onPressClass
     <FlatList
       data={classes}
       keyExtractor={(item) => item.id}
-      contentContainerClassName="py-3"
+      // No column headings: each class is its own key now, not a row in a
+      // table, so there is nothing spanning the list to head.
+      contentContainerClassName="px-4 pb-24 pt-1"
       renderItem={({ item, index }) => (
         <ClassCard
           classEntry={item}
-          color={colorMap.get(item.id) ?? '#9ca3af'}
+          color={colorMap.get(item.id) ?? '#5c7f96'}
           included={includedIds.includes(item.id)}
           index={index}
           onToggleIncluded={() => onToggleIncluded(item.id)}

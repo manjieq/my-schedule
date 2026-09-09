@@ -128,6 +128,16 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
+            // Debug builds install alongside the released app instead of
+            // replacing it. Without this both variants claim
+            // com.myschedule.app, and since they are signed with different
+            // keys the only way to install a debug build over an installed
+            // release is to uninstall it first — which wipes the real
+            // schedule data, there being no cloud copy of anything.
+            // Like the release signingConfig above, this is hand-edited and a
+            // `prebuild --clean` would drop it.
+            applicationIdSuffix '.debug'
+            versionNameSuffix '-debug'
         }
         release {
             signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug

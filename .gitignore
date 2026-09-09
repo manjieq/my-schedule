@@ -58,3 +58,11 @@ android/app/build/
 android/.gradle/
 android/.kotlin/
 android/local.properties
+
+# Impeccable working files: decision-round mocks, build state, review captures.
+# The surface brief and PRODUCT.md are kept — they are the durable record of
+# why this design is the way it is.
+.impeccable/mocks/
+.impeccable/review/
+.impeccable/build/
+.impeccable/questions/
