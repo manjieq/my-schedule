@@ -7,11 +7,9 @@ import { sharedClassIds } from './compare';
 import type { ClassEntry, Loadout } from './models';
 
 /**
- * Shared by both loadout comparison views — landscape's full-detail
- * app/loadout-compare.tsx and portrait's compact LoadoutComparisonView —
- * so the "one shared hour range/day set across every panel, plus which
- * classes are actually common" math isn't duplicated between them and
- * can't drift out of sync.
+ * Backs the landscape comparison route (app/loadout-compare.tsx): one
+ * shared hour range/day set across every panel, plus which classes are
+ * actually common.
  *
  * classIds that no longer resolve to an existing class (the class was
  * deleted after the loadout was saved) are silently dropped here — a
