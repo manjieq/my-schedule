@@ -77,8 +77,8 @@ Confirmed functionality:
   marks on the clashing blocks. It warns; it never blocks.
 - Stable per-class colours, assigned deterministically so a class is the same
   colour everywhere it appears.
-- Loadouts: save, load, delete, and compare up to four at once, in portrait or
-  full-screen landscape.
+- Loadouts: save, load, delete, and compare up to four at once in a
+  full-screen landscape view.
 - PNG export of the week to gallery or share sheet.
 - Light / dark / follow-system theme, persisted.
 - Erase all data.

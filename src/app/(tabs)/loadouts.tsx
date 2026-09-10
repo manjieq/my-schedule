@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { Masthead } from '@/components/layout/Masthead';
-import { LoadoutComparisonView } from '@/components/loadouts/LoadoutComparisonView';
 import { LoadoutList } from '@/components/loadouts/LoadoutList';
 import { useAppState } from '@/lib/app-state';
 import { buildColorMap } from '@/lib/color';
@@ -13,10 +12,10 @@ import { useRipple } from '@/lib/theme';
 import type { Loadout } from '@/lib/models';
 
 // Beyond this, side-by-side comparison stops being readable — panels just
-// get squeezed past the point a schedule grid means anything. Both
-// comparison views already fall back to horizontal scroll below their
-// floor width regardless, so this cap is about readability, not a
-// technical limit either view actually has.
+// get squeezed past the point a schedule grid means anything. The landscape
+// comparison already falls back to horizontal scroll below its floor width
+// regardless, so this cap is about readability, not a technical limit the
+// view actually has.
 const MAX_COMPARE = 4;
 
 export default function LoadoutsScreen() {
@@ -31,13 +30,6 @@ export default function LoadoutsScreen() {
   const classesById = useMemo(() => new Map(state.classes.map((c) => [c.id, c])), [state.classes]);
   const colorMap = useMemo(() => buildColorMap(state.classes), [state.classes]);
   const colorFor = (id: string) => colorMap.get(id) ?? '#5c7f96';
-
-  // Position in the saved list decides which revision stock a loadout is filed
-  // on, so the comparison panels can show the same paper as the cards.
-  const stockIndexById = useMemo(
-    () => new Map(state.loadouts.map((l, i) => [l.id, i])),
-    [state.loadouts]
-  );
 
   function toggleCompare(id: string) {
     setCompareIds((prev) => {
@@ -117,6 +109,9 @@ export default function LoadoutsScreen() {
           deletable={deleting}
         />
 
+        {/* The only comparison surface is the landscape route. A portrait
+            side-by-side was always going to be too squeezed to read, so
+            picking two loadouts leads to one key and nothing else. */}
         {comparedLoadouts.length >= 2 && (
           <Pressable
             onPress={() =>
@@ -137,14 +132,6 @@ export default function LoadoutsScreen() {
             </Text>
           </Pressable>
         )}
-
-        <LoadoutComparisonView
-          loadouts={comparedLoadouts}
-          classesById={classesById}
-          maxCredits={state.creditCap}
-          colorFor={colorFor}
-          stockIndexById={stockIndexById}
-        />
       </ScrollView>
     </View>
   );

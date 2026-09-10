@@ -34,6 +34,9 @@ const MIN_HOUR_PX = 34;
 // Height of the day-label header row — subtracted from maxBodyHeight so the
 // shrink math is against the whole board's footprint.
 const HEADER_ROW_HEIGHT = 34;
+/** The ruled cell: the grid draws a line every half hour, so that is the unit
+ *  the NOW band snaps to. */
+const SLOT_MINUTES = 30;
 // Below this an item has no room for its location line without colliding
 // with its own name.
 const DENSE_BLOCK_HEIGHT = 86;
@@ -85,11 +88,6 @@ export function ScheduleGrid({
   // Hooks first, before the empty-state early return below — rules of hooks.
   const [containerWidth, setContainerWidth] = useState(0);
   const handleContainerLayout = (e: LayoutChangeEvent) => setContainerWidth(e.nativeEvent.layout.width);
-  // Measured rather than assumed: HEADER_ROW_HEIGHT is only the estimate the
-  // shrink math needs before first layout, but the NOW rule is positioned
-  // against the real header, and a few pixels out reads as a wrong time.
-  const [headerHeight, setHeaderHeight] = useState(HEADER_ROW_HEIGHT);
-  const handleHeaderLayout = (e: LayoutChangeEvent) => setHeaderHeight(e.nativeEvent.layout.height);
 
   if (classes.length === 0) {
     return (
@@ -133,9 +131,12 @@ export function ScheduleGrid({
 
   const isConflicted = (slot: TimeSlot) => conflicts.some((c) => c.slotA === slot || c.slotB === slot);
 
-  const nowTop = (nowMinutes - START_HOUR * 60) * pxPerMin;
-  const nowVisible = showNow && nowTop >= 0 && nowTop <= bodyHeight;
-  const nowLabel = `${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}`;
+  // Now is marked the same way today is: by lighting the cells it falls in,
+  // not by drawing a rule across them. The band is one ruled cell tall, so it
+  // lands on the grid the sheet is already printed on.
+  const nowBandTop = (Math.floor(nowMinutes / SLOT_MINUTES) * SLOT_MINUTES - START_HOUR * 60) * pxPerMin;
+  const nowBandHeight = (SLOT_MINUTES * HOUR_PX) / 60;
+  const nowVisible = showNow && nowBandTop >= 0 && nowBandTop < bodyHeight;
 
   return (
     <View
@@ -153,7 +154,7 @@ export function ScheduleGrid({
         <View>
           {/* --- day header: today is struck, the way a sheet marks the day
                   it was issued for -------------------------------------- */}
-          <View className="flex-row border-b border-hair" onLayout={handleHeaderLayout}>
+          <View className="flex-row border-b border-hair">
             <View style={{ width: GUTTER_WIDTH }} />
             {days.map((day) => {
               const isToday = showNow && day === today;
@@ -227,6 +228,14 @@ export function ScheduleGrid({
                   {/* today is a wash laid over the recess, not a different
                       recess — the column is still a cut in the same body */}
                   {isToday ? <View className="absolute inset-0 bg-today-wash" /> : null}
+                  {/* the cell you are in, right now — same wash as today, so
+                      the two cross at the cell you actually care about */}
+                  {nowVisible ? (
+                    <View
+                      className="absolute left-0 right-0 bg-today-wash"
+                      style={{ top: nowBandTop, height: nowBandHeight }}
+                    />
+                  ) : null}
                   <View
                     style={{ position: 'absolute', left: 0, right: 0, top: 0, height: 2 }}
                     className={isToday ? 'bg-today-edge' : ''}
@@ -273,28 +282,6 @@ export function ScheduleGrid({
               );
             })}
           </View>
-
-          {/* --- the NOW rule, drawn over every column ------------------- */}
-          {nowVisible ? (
-            <View
-              pointerEvents="none"
-              className="absolute left-0 right-0 flex-row items-center"
-              style={{ top: headerHeight + nowTop - 6 }}
-            >
-              {/* The time-code, in the gutter where every other time on this
-                  sheet is printed. Without it the rule was an unlabelled
-                  hairline that read as a strikethrough on whatever class name
-                  it happened to cross. */}
-              <Text
-                className="font-panel-semi text-tag text-alert"
-                style={{ width: GUTTER_WIDTH, textAlign: 'right', paddingRight: 3 }}
-              >
-                {nowLabel}
-              </Text>
-              <View className="h-[3px] w-[3px] bg-alert" />
-              <View className="h-0 flex-1 border-t-2 border-alert" style={{ borderStyle: 'solid' }} />
-            </View>
-          ) : null}
         </View>
       </ScrollView>
     </View>
