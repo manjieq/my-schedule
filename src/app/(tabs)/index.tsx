@@ -86,6 +86,8 @@ export default function ScheduleScreen() {
               classes={includedClasses}
               colorFor={colorFor}
               conflicts={conflicts}
+              creditCap={state.creditCap}
+              total={total}
             />
           ) : null}
         </View>

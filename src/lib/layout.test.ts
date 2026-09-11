@@ -1,6 +1,17 @@
 // Ported unchanged (aside from vitest -> jest globals) from
 // course-scheduler-mobile's packages/shared-types/src/layout.test.ts.
-import { layoutOverlaps, type LayoutInput } from './layout';
+import {
+  DEFAULT_DAY_COLUMN_WIDTH,
+  GUTTER_WIDTH,
+  layoutOverlaps,
+  scheduleGridWidth,
+  type LayoutInput,
+} from './layout';
+import type { ClassEntry } from './models';
+
+function classEntry(id: string, schedule: ClassEntry['schedule']): ClassEntry {
+  return { id, name: id, credits: 3, schedule, createdAt: '2026-01-01T00:00:00.000Z' };
+}
 
 describe('layoutOverlaps', () => {
   it('gives non-overlapping items their own single-column cluster', () => {
@@ -39,5 +50,35 @@ describe('layoutOverlaps', () => {
     expect(result.find((r) => r.key === 'a')?.column).toBe(0);
     expect(result.find((r) => r.key === 'b')?.column).toBe(1);
     expect(result.find((r) => r.key === 'c')?.column).toBe(0);
+  });
+});
+
+// The export plate sizes itself from this, and a wrong answer is what put the
+// schedule against the left edge of the shared image in the first place.
+describe('scheduleGridWidth', () => {
+  it('counts five columns for a weekday-only schedule', () => {
+    const classes = [
+      classEntry('a', [{ day: 'MON', start: '09:00', end: '10:00' }]),
+      classEntry('b', [{ day: 'FRI', start: '13:00', end: '14:00' }]),
+    ];
+    expect(scheduleGridWidth(classes)).toBe(GUTTER_WIDTH + 5 * DEFAULT_DAY_COLUMN_WIDTH);
+  });
+
+  it('widens to seven columns once a class meets on both weekend days', () => {
+    const classes = [
+      classEntry('a', [{ day: 'MON', start: '09:00', end: '10:00' }]),
+      classEntry('b', [{ day: 'SAT', start: '10:00', end: '11:00' }]),
+      classEntry('c', [{ day: 'SUN', start: '10:00', end: '11:00' }]),
+    ];
+    expect(scheduleGridWidth(classes)).toBe(GUTTER_WIDTH + 7 * DEFAULT_DAY_COLUMN_WIDTH);
+  });
+
+  it('keeps the five weekday columns even with nothing scheduled', () => {
+    expect(scheduleGridWidth([])).toBe(GUTTER_WIDTH + 5 * DEFAULT_DAY_COLUMN_WIDTH);
+  });
+
+  it('honours an explicit column width', () => {
+    const classes = [classEntry('a', [{ day: 'MON', start: '09:00', end: '10:00' }])];
+    expect(scheduleGridWidth(classes, 80)).toBe(GUTTER_WIDTH + 5 * 80);
   });
 });
