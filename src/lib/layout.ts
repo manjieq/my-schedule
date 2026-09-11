@@ -1,7 +1,32 @@
-// Ported unchanged from course-scheduler-mobile's
+// Ported (largely unchanged) from course-scheduler-mobile's
 // packages/shared-types/src/layout.ts. UI layout logic (interval-graph
 // column packing for the schedule grid) — separate from time.ts's
 // conflict-warning logic even though both detect overlaps.
+//
+// The board's own geometry lives here too, rather than inside ScheduleGrid,
+// because the export plate has to size itself around the grid before the grid
+// has rendered. Keeping it in a pure module means that arithmetic can be
+// tested without standing up React Native.
+import { computeScheduleDays } from './time';
+import type { ClassEntry } from './models';
+
+/** The hour column down the left of the board. */
+export const GUTTER_WIDTH = 24;
+/** One day column at full size. The on-screen board shrinks below this to fit
+ *  a phone; the exported image never does. */
+export const DEFAULT_DAY_COLUMN_WIDTH = 104;
+
+/** The width the board actually draws at for a given class set — the hour
+ *  gutter plus one column per day that has something on it. The export plate
+ *  uses this to fit itself to the board instead of guessing a width and
+ *  leaving the week stranded against one edge. */
+export function scheduleGridWidth(
+  classes: ClassEntry[],
+  dayColumnWidth: number = DEFAULT_DAY_COLUMN_WIDTH
+): number {
+  return GUTTER_WIDTH + computeScheduleDays(classes).length * dayColumnWidth;
+}
+
 /**
  * Assigns a column + column-count to each item so mutually-overlapping items
  * in the same day render side by side instead of stacking on top of each

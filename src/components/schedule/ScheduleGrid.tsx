@@ -17,12 +17,15 @@ import { ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { DAYS_OF_WEEK } from '@/lib/models';
 import type { ClassEntry, ConflictPair, DayOfWeek, TimeSlot } from '@/lib/models';
 import { computeScheduleDays, computeScheduleHourRange, toMinutes } from '@/lib/time';
-import { layoutOverlaps, type LayoutInput } from '@/lib/layout';
+import {
+  DEFAULT_DAY_COLUMN_WIDTH,
+  GUTTER_WIDTH,
+  layoutOverlaps,
+  type LayoutInput,
+} from '@/lib/layout';
 
 import { EventBlock } from './EventBlock';
 
-const GUTTER_WIDTH = 24;
-const DEFAULT_DAY_COLUMN_WIDTH = 104;
 const MIN_DAY_COLUMN_WIDTH = 64;
 // onLayout reports the root View's border-box width, but its border eats a
 // couple of pixels the raw measurement doesn't account for — without this,
@@ -51,6 +54,11 @@ interface ScheduleGridProps {
   maxBodyHeight?: number;
   /** Today's strike and the NOW rule. Off for the export plate. */
   showNow?: boolean;
+  /** Draw columns at exactly this width instead of measuring the container and
+   *  shrinking to fit. The export plate sizes itself around the grid rather
+   *  than the other way round, and an off-screen capture cannot wait for an
+   *  onLayout pass that may not land before capture(). */
+  dayColumnWidth?: number;
 }
 
 interface EventEntry {
@@ -84,6 +92,7 @@ export function ScheduleGrid({
   differs,
   maxBodyHeight,
   showNow = true,
+  dayColumnWidth,
 }: ScheduleGridProps) {
   // Hooks first, before the empty-state early return below — rules of hooks.
   const [containerWidth, setContainerWidth] = useState(0);
@@ -125,9 +134,10 @@ export function ScheduleGrid({
     ? Math.max(containerWidth - GUTTER_WIDTH - EDGE_SAFETY_MARGIN, 0)
     : undefined;
   const DAY_COLUMN_WIDTH =
-    availableColumnsWidth && naturalColumnsWidth > availableColumnsWidth
+    dayColumnWidth ??
+    (availableColumnsWidth && naturalColumnsWidth > availableColumnsWidth
       ? Math.max(MIN_DAY_COLUMN_WIDTH, Math.floor(availableColumnsWidth / days.length))
-      : DEFAULT_DAY_COLUMN_WIDTH;
+      : DEFAULT_DAY_COLUMN_WIDTH);
 
   const isConflicted = (slot: TimeSlot) => conflicts.some((c) => c.slotA === slot || c.slotB === slot);
 

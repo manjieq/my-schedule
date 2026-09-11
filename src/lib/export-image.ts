@@ -1,4 +1,4 @@
-import * as MediaLibrary from 'expo-media-library';
+import { Asset, getPermissionsAsync, requestPermissionsAsync } from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 
 /** Saves an already-captured image (a local file URI, see ExportScheduleButton's
@@ -6,16 +6,21 @@ import * as Sharing from 'expo-sharing';
  *  permission at the moment of an actual save tap, and only if not already
  *  granted/denied — never on screen load. */
 export async function saveImageToGallery(uri: string): Promise<void> {
-  const existing = await MediaLibrary.getPermissionsAsync();
+  const existing = await getPermissionsAsync();
   let granted = existing.granted;
   if (!granted && existing.canAskAgain) {
-    const requested = await MediaLibrary.requestPermissionsAsync();
+    const requested = await requestPermissionsAsync();
     granted = requested.granted;
   }
   if (!granted) {
     throw new Error('Photo library permission was denied. Enable it in your device Settings to save images.');
   }
-  await MediaLibrary.saveToLibraryAsync(uri);
+  // Asset.create is the SDK 57 way in. The saveToLibraryAsync that used to be
+  // here still exists on this entry point, but only as a deprecation stub that
+  // throws on every call — which is exactly what it did, silently turning every
+  // save into "Couldn't export". With no album passed, Android files it under
+  // the default Pictures directory.
+  await Asset.create(uri);
 }
 
 /** Opens the OS share sheet for the image — no permission needed, always

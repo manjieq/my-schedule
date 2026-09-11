@@ -15,10 +15,24 @@ import type { ReactNode } from 'react';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { usePanelColors } from '@/lib/theme';
+import { usePanelColors, type PanelColors } from '@/lib/theme';
+
+/** The brushed-steel sweep, as props rather than as literals, so the export
+ *  plate can wear the same body the app does without the two drifting apart.
+ *  155deg in the reference; React Native takes unit-square start/end points
+ *  instead of an angle, and this pair is that diagonal — lightest at the
+ *  top-left, darkest at the bottom-right. */
+export function chassisGradient(c: PanelColors) {
+  return {
+    colors: [c.chassis1, c.chassis2, c.chassis3],
+    locations: [0, 0.55, 1],
+    start: { x: 0.1, y: 0 },
+    end: { x: 0.9, y: 1 },
+  } as const;
+}
 
 /** A slotted screw head. Four of them are the whole hardware vocabulary. */
-function Screw({ style }: { style: object }) {
+export function Screw({ style }: { style: object }) {
   const c = usePanelColors();
   return (
     <View
@@ -60,16 +74,7 @@ export function Chassis({ children }: { children: ReactNode }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <LinearGradient
-      // 155deg in the reference. React Native takes unit-square start/end
-      // points instead of an angle; this pair is that diagonal, lightest at the
-      // top-left and darkest at the bottom-right.
-      colors={[c.chassis1, c.chassis2, c.chassis3]}
-      locations={[0, 0.55, 1]}
-      start={{ x: 0.1, y: 0 }}
-      end={{ x: 0.9, y: 1 }}
-      style={{ flex: 1 }}
-    >
+    <LinearGradient {...chassisGradient(c)} style={{ flex: 1 }}>
       {children}
       <Screw style={{ left: 10, top: insets.top + 6 }} />
       <Screw style={{ right: 10, top: insets.top + 6 }} />
