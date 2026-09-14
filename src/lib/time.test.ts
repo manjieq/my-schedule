@@ -8,6 +8,7 @@ import {
   formatTime,
   slotsOverlap,
   toMinutes,
+  todayDay,
 } from './time';
 import type { ClassEntry } from './models';
 
@@ -123,5 +124,15 @@ describe('computeScheduleDays', () => {
       classEntry('b', 'CS102', [{ day: 'SAT', start: '09:00', end: '10:00' }]),
     ];
     expect(computeScheduleDays(classes)).toEqual(['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN']);
+  });
+});
+
+describe('todayDay', () => {
+  it('maps JS Sunday-indexed days onto the Monday-first week', () => {
+    // 2026-09-14 is a Monday, so the week runs to Sunday the 20th.
+    expect(todayDay(new Date(2026, 8, 14))).toBe('MON');
+    expect(todayDay(new Date(2026, 8, 18))).toBe('FRI');
+    expect(todayDay(new Date(2026, 8, 19))).toBe('SAT');
+    expect(todayDay(new Date(2026, 8, 20))).toBe('SUN');
   });
 });

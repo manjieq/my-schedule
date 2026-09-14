@@ -2,6 +2,7 @@
 // packages/shared-types/src/time.ts (Course -> ClassEntry). Conflict
 // detection stays a pure, on-demand computation (never persisted) and is a
 // warning only, never a block on adding/including a class.
+import { DAYS_OF_WEEK } from './models';
 import type { ClassEntry, ConflictPair, DayOfWeek, TimeSlot } from './models';
 
 /** Converts a "HH:MM" 24h string into minutes since midnight. */
@@ -110,4 +111,15 @@ export function computeScheduleDays(classes: ClassEntry[]): DayOfWeek[] {
   if (present.has('SAT')) days.push('SAT');
   if (present.has('SUN')) days.push('SUN');
   return days;
+}
+
+/**
+ * Which day of the week it is right now. JS getDay() is Sunday-indexed and
+ * DAYS_OF_WEEK is Monday-first, so the shift is not cosmetic. This lives here
+ * rather than in the grid because the schedule screen decides whether the
+ * board is at rest, and the grid decides which column to strike — both need
+ * the same answer.
+ */
+export function todayDay(now: Date = new Date()): DayOfWeek {
+  return DAYS_OF_WEEK[(now.getDay() + 6) % 7];
 }

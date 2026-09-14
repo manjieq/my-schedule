@@ -24,7 +24,8 @@ import { ScheduleGrid } from '@/components/schedule/ScheduleGrid';
 import { useAppState } from '@/lib/app-state';
 import { sumCredits } from '@/lib/credits';
 import { buildColorMap } from '@/lib/color';
-import { findConflicts } from '@/lib/time';
+import { REST_MESSAGES, isRestDay, pickRestMessage } from '@/lib/rest';
+import { findConflicts, todayDay } from '@/lib/time';
 
 export default function ScheduleScreen() {
   const { state, dispatch } = useAppState();
@@ -54,6 +55,26 @@ export default function ScheduleScreen() {
   const conflicts = findConflicts(includedClasses);
   const total = sumCredits(includedClasses);
 
+  // The board rests on a weekend, or on a weekday with nothing called. With
+  // nothing called at all the grid's own "nothing called this week" panel is
+  // the better answer, so rest mode stays out of its way.
+  //
+  // `new Date()` is read during render with no ticker (the grid does the same
+  // for its NOW band), so a screen left open across midnight keeps yesterday's
+  // answer until something else re-renders it. A clock here would re-render
+  // the whole board every tick for a case nobody sits through.
+  const atRest = includedClasses.length > 0 && isRestDay(includedClasses, todayDay());
+  const [revealed, setRevealed] = useState(false);
+  const [messageIndex, setMessageIndex] = useState(() => pickRestMessage());
+  const resting = atRest && !revealed;
+
+  const toggleBoard = () => {
+    // Re-rolled on the way back, so returning to rest never looks like a
+    // display that failed to change.
+    if (revealed) setMessageIndex((i) => pickRestMessage(i));
+    setRevealed((v) => !v);
+  };
+
   return (
     <View className="flex-1">
       <Masthead
@@ -76,11 +97,16 @@ export default function ScheduleScreen() {
 
       <View className="flex-1" onLayout={handleBodyLayout}>
         <View className="gap-2 pb-2 pt-1" onLayout={handleTopSectionLayout}>
-          <CreditReadout total={total} creditCap={state.creditCap} conflictCount={conflicts.length} />
+          <CreditReadout
+            total={total}
+            creditCap={state.creditCap}
+            conflictCount={conflicts.length}
+            message={resting ? REST_MESSAGES[messageIndex] : undefined}
+          />
           {state.saveError ? (
             <ErrorState message={state.saveError} onDismiss={() => dispatch({ type: 'DISMISS_SAVE_ERROR' })} />
           ) : null}
-          <ConflictWarningBanner conflicts={conflicts} />
+          <ConflictWarningBanner conflicts={resting ? [] : conflicts} />
           {exportOpen ? (
             <ExportScheduleButton
               classes={includedClasses}
@@ -97,6 +123,8 @@ export default function ScheduleScreen() {
           colorFor={colorFor}
           conflicts={conflicts}
           maxBodyHeight={gridMaxHeight}
+          hideEvents={resting}
+          onPress={atRest ? toggleBoard : undefined}
         />
       </View>
 
