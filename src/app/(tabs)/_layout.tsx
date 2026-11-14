@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { usePathname } from 'expo-router';
 import { TabList, TabSlot, TabTrigger, Tabs, type TabTriggerSlotProps } from 'expo-router/ui';
-import { forwardRef } from 'react';
+import { forwardRef, useEffect } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -47,6 +47,13 @@ import { KEY_REST, useRipple, usePanelColors } from '@/lib/theme';
 // nobody finds — the APK is passed to friends with no explanation. A bar along
 // the key's lower edge fills while it is held, so the hold reads as deliberate
 // rather than as a tap that did not work.
+//
+// On the bus panel the Schedule key is the only key: Classes and Loadouts
+// fold away and it stretches across the whole row, carrying its own
+// HOLD · BOARD legend. Every way off the panel (tap, hold, Android back) lands
+// on the board, where the three keys come back. The fold is animated from
+// inside each key, because TabList only finds TabTriggers that are its direct
+// children — the triggers cannot be wrapped in an animated container.
 
 /** How long the Schedule key must be held for its bus function. Shorter than
  *  the platform's 500ms: this is a key you reach for, not a context menu. */
@@ -54,6 +61,9 @@ const HOLD_MS = 400;
 /** The fill waits this long before starting, so an ordinary tap does not
  *  flash it. */
 const HOLD_FILL_DELAY_MS = 120;
+/** How long Classes and Loadouts take to fold away, and to come back. */
+const FOLD_MS = 220;
+const KEY_GAP = 8;
 
 type PanelTabProps = TabTriggerSlotProps & {
   label: string;
@@ -69,6 +79,13 @@ type PanelTabProps = TabTriggerSlotProps & {
   legendColor?: string;
   /** 0..1 while the key is held; drawn as a bar along its lower edge. */
   holdProgress?: SharedValue<number>;
+  /** 0 in the row, 1 folded away. Only Classes and Loadouts fold. */
+  fold?: SharedValue<number>;
+  /** Folded away: no touches, and hidden from TalkBack. */
+  folded?: boolean;
+  /** Set on the stretched Schedule key: a legend printed on the key itself,
+   *  with the key's icon pushed to its left end. */
+  wideLegend?: { text: string; icon: React.ComponentProps<typeof Ionicons>['name'] };
 };
 
 function HoldBar({ progress, color }: { progress: SharedValue<number>; color: string }) {
@@ -95,66 +112,105 @@ const PanelTab = forwardRef<View, PanelTabProps>(
       legend,
       legendColor,
       holdProgress,
+      fold,
+      folded = false,
+      wideLegend,
       style,
       ...props
     },
     ref
-  ) => (
-    <Pressable
-      ref={ref}
-      {...props}
-      accessibilityRole="tab"
-      accessibilityState={{ selected: !!isFocused }}
-      accessibilityLabel={label}
-      android_ripple={isFocused ? liveRipple : ripple}
-      style={[
-        // TabTrigger forwards its own { flexDirection: 'row',
-        // justifyContent: 'space-between' } through the Slot, so it goes FIRST
-        // and ours wins. With the order reversed, every tab laid its icon out
-        // side by side and spread them across the bar. Pressable's style can
-        // also be a function of press state; TabTrigger never passes one, so
-        // narrow rather than widen this signature.
-        typeof style === 'function' ? null : style,
-        {
-          flex: 1,
-          height: 50,
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: 9,
-          borderTopWidth: 1,
-          borderTopColor: 'rgba(255,255,255,0.05)',
-          backgroundColor: isFocused ? accent : keyFace,
-        },
-        KEY_REST,
-      ]}
-    >
-      <Ionicons name={icon} size={23} color={isFocused ? liveColor : idleColor} />
-      {holdProgress ? <HoldBar progress={holdProgress} color={isFocused ? liveColor : accent} /> : null}
-      {legend ? (
-        // Sits above the key, outside its bounds — React Native does not clip
-        // overflow by default, and the key row leaves room for it.
-        <View
-          pointerEvents="none"
+  ) => {
+    // A key that never folds still needs a value for the hook to read.
+    const unfolded = useSharedValue(0);
+    const amount = fold ?? unfolded;
+    const foldStyle = useAnimatedStyle(() => ({
+      flexGrow: 1 - amount.value,
+      marginLeft: fold ? KEY_GAP * (1 - amount.value) : 0,
+      opacity: 1 - amount.value,
+    }));
+    const tint = isFocused ? liveColor : idleColor;
+
+    return (
+      // The outer view is the key's body: its size in the row, its height and
+      // its shadow. The Pressable inside is the face.
+      <Animated.View
+        ref={ref}
+        pointerEvents={folded ? 'none' : 'auto'}
+        importantForAccessibility={folded ? 'no-hide-descendants' : 'auto'}
+        style={[
+          // TabTrigger forwards its own { flexDirection: 'row',
+          // justifyContent: 'space-between' } through the Slot, so it goes
+          // FIRST and ours wins. With the order reversed, every tab laid its
+          // icon out side by side and spread them across the bar. Pressable's
+          // style can also be a function of press state; TabTrigger never
+          // passes one, so narrow rather than widen this signature.
+          typeof style === 'function' ? null : style,
+          {
+            flexBasis: 0,
+            height: 50,
+            borderRadius: 9,
+            backgroundColor: isFocused ? accent : keyFace,
+            // A folding key clips its icon as it narrows; the Schedule key
+            // must not clip, its legend sits above it.
+            overflow: fold ? 'hidden' : 'visible',
+          },
+          KEY_REST,
+          foldStyle,
+        ]}
+      >
+        <Pressable
+          {...props}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: !!isFocused }}
+          accessibilityLabel={label}
+          android_ripple={isFocused ? liveRipple : ripple}
           style={{
-            position: 'absolute',
-            top: -17,
-            left: 0,
-            right: 0,
+            flex: 1,
             flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
-            gap: 4,
+            justifyContent: wideLegend ? 'space-between' : 'center',
+            paddingHorizontal: wideLegend ? 20 : 0,
+            borderRadius: 9,
+            borderTopWidth: 1,
+            borderTopColor: 'rgba(255,255,255,0.05)',
           }}
         >
-          <Ionicons name={legend.icon} size={10} color={legendColor} />
-          <Text className="font-panel-bold text-micro uppercase" style={{ color: legendColor }}>
-            {legend.text}
-          </Text>
-        </View>
-      ) : null}
-    </Pressable>
-  )
+          <Ionicons name={icon} size={23} color={tint} />
+          {wideLegend ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 }}>
+              <Ionicons name={wideLegend.icon} size={14} color={tint} />
+              <Text className="font-panel-bold text-label uppercase" style={{ color: tint }} numberOfLines={1}>
+                {wideLegend.text}
+              </Text>
+            </View>
+          ) : null}
+          {holdProgress ? <HoldBar progress={holdProgress} color={isFocused ? liveColor : accent} /> : null}
+          {legend ? (
+            // Sits above the key, outside its bounds — React Native does not
+            // clip overflow by default, and the key row leaves room for it.
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                top: -17,
+                left: 0,
+                right: 0,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 4,
+              }}
+            >
+              <Ionicons name={legend.icon} size={10} color={legendColor} />
+              <Text className="font-panel-bold text-micro uppercase" style={{ color: legendColor }}>
+                {legend.text}
+              </Text>
+            </View>
+          ) : null}
+        </Pressable>
+      </Animated.View>
+    );
+  }
 );
 PanelTab.displayName = 'PanelTab';
 
@@ -189,6 +245,13 @@ function PanelTabs() {
   const scheduleFocused = pathname === '/';
   const onHold = () => setBusMode(scheduleFocused ? !busMode : true);
 
+  // Classes and Loadouts fold away while the bus panel is showing.
+  const folded = busMode && scheduleFocused;
+  const fold = useSharedValue(folded ? 1 : 0);
+  useEffect(() => {
+    fold.value = withTiming(folded ? 1 : 0, { duration: FOLD_MS, easing: Easing.out(Easing.cubic) });
+  }, [folded, fold]);
+
   const shared = {
     keyFace: c.key1,
     accent: c.accent,
@@ -208,7 +271,8 @@ function PanelTabs() {
           <View
           style={{
             flexDirection: 'row',
-            gap: 8,
+            // No row gap: each folding key carries its own left margin, so
+            // the space between keys closes up with them.
             paddingHorizontal: 14,
             // Room above the keys for the Schedule key's engraved legend.
             paddingTop: 24,
@@ -231,10 +295,10 @@ function PanelTabs() {
               <ScheduleKey busMode={busMode} holdProgress={holdProgress} shared={shared} />
             </TabTrigger>
             <TabTrigger name="classes" href="/classes" asChild>
-              <PanelTab label="Classes" icon="list-outline" {...shared} />
+              <PanelTab label="Classes" icon="list-outline" fold={fold} folded={folded} {...shared} />
             </TabTrigger>
             <TabTrigger name="loadouts" href="/loadouts" asChild>
-              <PanelTab label="Loadouts" icon="layers-outline" {...shared} />
+              <PanelTab label="Loadouts" icon="layers-outline" fold={fold} folded={folded} {...shared} />
             </TabTrigger>
           </View>
         </TabList>
@@ -249,7 +313,8 @@ type SharedKeyProps = Pick<
 >;
 
 /** The Schedule key: shows the bus while its second function is engaged, and
- *  carries the legend that says how to switch. */
+ *  carries the legend that says how to switch — engraved above it on the
+ *  board, printed on the stretched key itself on the bus panel. */
 const ScheduleKey = forwardRef<
   View,
   TabTriggerSlotProps & { busMode: boolean; holdProgress: SharedValue<number>; shared: SharedKeyProps }
@@ -263,7 +328,8 @@ const ScheduleKey = forwardRef<
       {...shared}
       label={showingBus ? 'Bus times. Tap or hold for the schedule' : 'Schedule. Hold for bus times'}
       icon={showingBus ? 'bus-outline' : 'calendar-outline'}
-      legend={showingBus ? { text: 'Hold · Board', icon: 'calendar-outline' } : { text: 'Hold · Bus', icon: 'bus-outline' }}
+      legend={showingBus ? undefined : { text: 'Hold · Bus', icon: 'bus-outline' }}
+      wideLegend={showingBus ? { text: 'Hold · Board', icon: 'calendar-outline' } : undefined}
       legendColor={c.accentHi}
       holdProgress={holdProgress}
     />

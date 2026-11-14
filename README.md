@@ -5,8 +5,9 @@ ones count, see the week laid out with clashes and a credit total, save
 combinations as loadouts and compare them side by side.
 
 It also shows the ERICA campus shuttle: hold the Schedule key (the first key
-in the bottom row) and the Schedule tab switches to the next bus from your stop;
-tap the key to go back to the board. **FULL TIMETABLE** opens the whole day's
+in the bottom row) and the Schedule tab switches to the next bus from your stop.
+While the bus screen is showing, the Schedule key is the only key in the row;
+hold or tap it to go back to the board. **FULL TIMETABLE** opens the whole day's
 table for that stop.
 
 Completely offline by design: no account, no server, no sync, no analytics, no
