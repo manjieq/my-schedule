@@ -10,15 +10,17 @@ While the bus screen is showing, the Schedule key is the only key in the row;
 hold or tap it to go back to the board. **FULL TIMETABLE** opens the whole day's
 table for that stop.
 
-Completely offline by design: no account, no server, no sync, no analytics, no
-network permission. Everything stays on the phone.
+Completely offline by design: no account, no server, no sync, no analytics, and
+the app makes no network requests. Everything stays on the phone.
 
 ## Requirements
 
 - Node 20+ and npm
 - JDK 17 (this project builds with `openjdk@17`; linuxbrew works)
 - Android SDK command-line tools and platform-tools on `PATH`
-- A physical Android device, or an emulator image
+- A physical Android device, or an emulator image. Builds are pinned to
+  `arm64-v8a` (see Release build), so an x86_64 emulator needs
+  `-PreactNativeArchitectures=x86_64` added to the Gradle command.
 
 There is no EAS, Expo account, or cloud build anywhere in this project. Every
 build is local.
@@ -100,8 +102,8 @@ src/app/            expo-router routes
   loadout-compare   full-screen landscape comparison
 src/components/     UI, grouped by area (bus/ is the shuttle panel)
 src/lib/            domain logic, storage, theme tokens
-assets/fonts/       bundled Archivo + Courier Prime
-assets/stamps/      the verdict stamp rasters
+assets/fonts/       bundled Chivo (Regular, SemiBold, Bold)
+assets/images/      app icon and splash
 ```
 
 ## Shuttle timetable
@@ -122,12 +124,24 @@ the next year's dates to `HOLIDAYS` in the same file.
 
 ## Design
 
-The interface follows a documented visual direction — a production call sheet.
+The interface is drawn as a bench instrument — a desk calculator. The screen is
+the chassis (brushed steel with corner screws), anything you can press is a
+keycap standing proud of it, and the numbers that matter (the credit total, the
+next bus) sit in one recessed LCD readout with seven-segment digits. Dark mode
+is near-black steel with gold trim and a backlit green LCD; light mode is a
+silver body with blue trim and a daylight LCD. The pieces live in
+`src/components/panel/` (`Chassis`, `Keycap`, `PanelKey`, `Lcd`,
+`SevenSegment`).
+
 Colour tokens are declared once per scheme in `src/global.css` and exposed
 through `tailwind.config.js`; components use the semantic names (`bg-stock`,
 `text-ink-2`) and never raw Tailwind neutrals. The values that React Native APIs
 need as literals are mirrored in `src/lib/theme.ts` and must be kept in step.
 
-Class names, instructors and rooms are Korean, so the bundled Latin faces are
-never applied to user-entered content — see `PRODUCT.md` for the full
-constraint.
+Never give a `Pressable` a `style={({ pressed }) => …}` function: NativeWind's
+interop silently drops it and the key renders with no face, height or shadow.
+Use `PanelKey`, which tracks press state itself.
+
+Class names, instructors and rooms are Korean, and Chivo carries no Hangul, so
+the panel face is never applied to user-entered content — see `PRODUCT.md` for
+the full constraint.
