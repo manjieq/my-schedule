@@ -11,12 +11,12 @@
 // header and washed in the body, and a red NOW rule sits at the current time.
 // Both are suppressed on the exported PNG, where "today" is meaningless to
 // whoever receives it.
-import { useState } from 'react';
-import { ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 
 import { DAYS_OF_WEEK } from '@/lib/models';
 import type { ClassEntry, ConflictPair, DayOfWeek, TimeSlot } from '@/lib/models';
-import { computeScheduleDays, computeScheduleHourRange, toMinutes } from '@/lib/time';
+import { computeScheduleDays, computeScheduleHourRange, toMinutes, todayDay } from '@/lib/time';
 import {
   DEFAULT_DAY_COLUMN_WIDTH,
   GUTTER_WIDTH,
@@ -59,16 +59,18 @@ interface ScheduleGridProps {
    *  than the other way round, and an off-screen capture cannot wait for an
    *  onLayout pass that may not land before capture(). */
   dayColumnWidth?: number;
+  /** Draw the ruled week but none of its blocks — the board at rest. The
+   *  columns and hour range still come from `classes`, so the shape of the
+   *  week does not change underneath the user when the blocks come back. */
+  hideEvents?: boolean;
+  /** Makes the whole board a tap target. Omit and the board is inert, which
+   *  is what the export plate and the comparison screen want. */
+  onPress?: () => void;
 }
 
 interface EventEntry {
   classEntry: ClassEntry;
   slot: TimeSlot;
-}
-
-/** JS getDay() is Sunday-indexed; DAYS_OF_WEEK is Monday-first. */
-function todayKey(now: Date): DayOfWeek {
-  return DAYS_OF_WEEK[(now.getDay() + 6) % 7];
 }
 
 /** Date number for each weekday of the week `now` falls in, so the header can
@@ -85,6 +87,25 @@ function weekDates(now: Date): Record<DayOfWeek, number> {
   return out;
 }
 
+/** The scrolled contents of the board: a plain View, or a Pressable when the
+ *  screen wants the whole board tappable. */
+function Board({
+  onPress,
+  accessibilityLabel,
+  children,
+}: {
+  onPress?: () => void;
+  accessibilityLabel: string;
+  children: ReactNode;
+}) {
+  if (!onPress) return <View>{children}</View>;
+  return (
+    <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={accessibilityLabel}>
+      {children}
+    </Pressable>
+  );
+}
+
 export function ScheduleGrid({
   classes,
   colorFor,
@@ -93,6 +114,8 @@ export function ScheduleGrid({
   maxBodyHeight,
   showNow = true,
   dayColumnWidth,
+  hideEvents = false,
+  onPress,
 }: ScheduleGridProps) {
   // Hooks first, before the empty-state early return below — rules of hooks.
   const [containerWidth, setContainerWidth] = useState(0);
@@ -112,7 +135,7 @@ export function ScheduleGrid({
   }
 
   const now = new Date();
-  const today = todayKey(now);
+  const today = todayDay(now);
   const dates = weekDates(now);
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
 
@@ -161,7 +184,14 @@ export function ScheduleGrid({
       onLayout={handleContainerLayout}
     >
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View>
+        {/* The tap target is the ScrollView's child, not its parent: a
+            Pressable inside a scroller lets a drag take the responder and
+            scroll, where one wrapping the scroller fights it. No ripple —
+            the board is not a key. */}
+        <Board
+          onPress={onPress}
+          accessibilityLabel={hideEvents ? 'Show the week' : 'Hide the week'}
+        >
           {/* --- day header: today is struck, the way a sheet marks the day
                   it was issued for -------------------------------------- */}
           <View className="flex-row border-b border-hair">
@@ -190,6 +220,19 @@ export function ScheduleGrid({
           </View>
 
           <View className="flex-row">
+            {/* At rest the tap target has to be visible without reading the
+                readout, so the invitation is engraved across the board
+                itself. pointerEvents none so the tap falls through. */}
+            {hideEvents && onPress ? (
+              <View
+                pointerEvents="none"
+                className="absolute inset-0 z-10 items-center justify-center"
+              >
+                <Text className="font-panel-bold text-label uppercase text-ink-3">
+                  tap to show the week
+                </Text>
+              </View>
+            ) : null}
             {/* --- hour gutter, filled in on the typewriter -------------- */}
             <View style={{ width: GUTTER_WIDTH, height: bodyHeight }}>
               {Array.from({ length: totalHours + 1 }, (_, i) => START_HOUR + i).map((hour) => (
@@ -261,7 +304,7 @@ export function ScheduleGrid({
                     />
                   ))}
 
-                  {positioned.map((item) => {
+                  {(hideEvents ? [] : positioned).map((item) => {
                     const top = (item.start - START_HOUR * 60) * pxPerMin;
                     const height = Math.max((item.end - item.start) * pxPerMin - 2, 16);
                     const widthPct = 100 / item.columnCount;
@@ -292,7 +335,7 @@ export function ScheduleGrid({
               );
             })}
           </View>
-        </View>
+        </Board>
       </ScrollView>
     </View>
   );
