@@ -9,6 +9,7 @@
 // border made the readout look like an outlined box sitting on the surface
 // rather than glass sunk into it.
 import { LinearGradient } from 'expo-linear-gradient';
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 
 import { usePanelColors } from '@/lib/theme';
@@ -18,9 +19,12 @@ interface LcdProps extends ViewProps {
   trace?: string;
   /** An engraved label sitting to the left of the digits, e.g. "TOTAL". */
   legend?: string;
+  /** Lines under the digits, on the same glass — the shuttle readout's
+   *  departure time and the buses after it. */
+  footer?: ReactNode;
 }
 
-export function Lcd({ trace, legend, children, style, className, ...rest }: LcdProps) {
+export function Lcd({ trace, legend, footer, children, style, className, ...rest }: LcdProps) {
   const c = usePanelColors();
 
   return (
@@ -48,6 +52,7 @@ export function Lcd({ trace, legend, children, style, className, ...rest }: LcdP
         )}
         <View className="flex-row items-end">{children}</View>
         </View>
+        {footer}
       </View>
     </View>
   );

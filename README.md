@@ -4,6 +4,11 @@ A class-timetable builder for Android. Enter your classes by hand, toggle which
 ones count, see the week laid out with clashes and a credit total, save
 combinations as loadouts and compare them side by side.
 
+It also shows the ERICA campus shuttle: hold the Schedule key (the first key
+in the bottom row) and the Schedule tab switches to the next bus from your stop;
+tap the key to go back to the board. **FULL TIMETABLE** opens the whole day's
+table for that stop.
+
 Completely offline by design: no account, no server, no sync, no analytics, no
 network permission. Everything stays on the phone.
 
@@ -74,8 +79,10 @@ npm run lint        # expo lint
 npm test            # jest
 ```
 
-Tests cover the pure scheduling logic only — conflict detection, overlap
-layout, credit maths, colour assignment, loadout diffing. Nothing under
+Tests cover the pure logic only — conflict detection, overlap layout, credit
+maths, colour assignment, loadout diffing, and the shuttle timetable (which
+table applies on a date, holidays, the next-bus reading, and spot checks of the
+transcribed timetable against the PDF). Nothing under
 `src/app/` or `src/components/` has automated coverage, so UI changes are
 verified by hand on a device.
 
@@ -88,13 +95,29 @@ src/app/            expo-router routes
   (tabs)/loadouts   saved loadouts and comparison
   class-form        add/edit a class (modal)
   save-loadout      name and save the current week (modal)
-  settings          theme, credit cap, erase all (modal)
+  settings          theme, credit cap, shuttle timetable, erase all (modal)
   loadout-compare   full-screen landscape comparison
-src/components/     UI, grouped by area
+src/components/     UI, grouped by area (bus/ is the shuttle panel)
 src/lib/            domain logic, storage, theme tokens
 assets/fonts/       bundled Archivo + Courier Prime
 assets/stamps/      the verdict stamp rasters
 ```
+
+## Shuttle timetable
+
+The shuttle times are bundled in `src/lib/bus-timetable.ts`, transcribed from
+the university's shuttle PDF (semester, seasonal session and vacation tables,
+weekday and weekend). The app never fetches anything, so a new timetable means
+editing that file and building again; `src/lib/bus.test.ts` pins a sample of
+cells and will need the same update.
+
+Which table applies is guessed from the date in `src/lib/bus.ts`
+(`guessPeriod`): semester from Mar 1 to Jun 21 and Sep 1 to Dec 21, seasonal
+session from Jun 22 to Jul 15 and Dec 22 to Jan 15, vacation otherwise. These
+are estimates. The readout always names the table in use, and Settings →
+Shuttle timetable overrides it until the guess next changes. Korean public
+holidays (2026 and 2027, substitute days included) run the weekend table; add
+the next year's dates to `HOLIDAYS` in the same file.
 
 ## Design
 

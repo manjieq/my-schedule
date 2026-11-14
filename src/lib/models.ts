@@ -2,6 +2,7 @@
 // packages/shared-types/src/models.ts, stripped of everything tied to
 // accounts/university/department/AI-extraction — every class here is
 // entered directly by the user, so there's no separate catalog to browse.
+import type { BusPeriodOverride, BusStop } from './bus';
 
 export type DayOfWeek = 'MON' | 'TUE' | 'WED' | 'THU' | 'FRI' | 'SAT' | 'SUN';
 
@@ -82,6 +83,17 @@ export interface AppSettings {
 
 export const DEFAULT_CREDIT_CAP = 18;
 
+/** The shuttle panel's remembered choices — see lib/bus.ts. `to` only
+ *  matters when `from` is Shuttlecock, but is kept either way so switching
+ *  stops and back does not lose it. */
+export interface BusPrefs {
+  from: BusStop;
+  to: BusStop;
+  override: BusPeriodOverride | null;
+}
+
+export const DEFAULT_BUS_PREFS: BusPrefs = { from: 'shuttlecock', to: 'handaeap', override: null };
+
 // AsyncStorage keys — versioned/namespaced so a future data-shape change
 // can migrate instead of silently misreading old data.
 export const STORAGE_KEYS = {
@@ -90,4 +102,5 @@ export const STORAGE_KEYS = {
   loadouts: 'myschedule:v1:loadouts',
   settings: 'myschedule:v1:settings',
   themePreference: 'myschedule:v1:theme-preference',
+  bus: 'myschedule:v1:bus',
 } as const;
