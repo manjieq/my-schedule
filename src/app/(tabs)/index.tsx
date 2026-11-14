@@ -14,6 +14,7 @@ import { useMemo, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { View, type LayoutChangeEvent } from 'react-native';
 
+import { BusPanel } from '@/components/bus/BusPanel';
 import { ErrorState } from '@/components/common/ErrorState';
 import { ExportScheduleButton } from '@/components/export/ExportScheduleButton';
 import { Masthead } from '@/components/layout/Masthead';
@@ -22,12 +23,20 @@ import { CreditReadout } from '@/components/schedule/CreditReadout';
 import { RunningTotal } from '@/components/schedule/RunningTotal';
 import { ScheduleGrid } from '@/components/schedule/ScheduleGrid';
 import { useAppState } from '@/lib/app-state';
+import { useBusMode } from '@/lib/bus-mode';
 import { sumCredits } from '@/lib/credits';
 import { buildColorMap } from '@/lib/color';
 import { REST_MESSAGES, isRestDay, pickRestMessage } from '@/lib/rest';
 import { findConflicts, todayDay } from '@/lib/time';
 
-export default function ScheduleScreen() {
+/** The Schedule tab draws the board, or — while the Schedule key is in its
+ *  second function — the shuttle panel. See lib/bus-mode.tsx. */
+export default function ScheduleTab() {
+  const { busMode } = useBusMode();
+  return busMode ? <BusPanel /> : <ScheduleBoard />;
+}
+
+function ScheduleBoard() {
   const { state, dispatch } = useAppState();
   const router = useRouter();
   const [exportOpen, setExportOpen] = useState(false);

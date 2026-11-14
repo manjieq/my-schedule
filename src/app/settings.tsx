@@ -1,5 +1,6 @@
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 
+import { BusPeriodPicker } from '@/components/settings/BusPeriodPicker';
 import { CreditCapEditor } from '@/components/settings/CreditCapEditor';
 import { ThemePicker } from '@/components/settings/ThemePicker';
 import { ErrorState } from '@/components/common/ErrorState';
@@ -42,6 +43,13 @@ export default function SettingsScreen() {
         <CreditCapEditor
           creditCap={state.creditCap}
           onSave={(creditCap) => dispatch({ type: 'SET_CREDIT_CAP', creditCap })}
+        />
+      </Section>
+
+      <Section title="Shuttle timetable">
+        <BusPeriodPicker
+          override={state.bus.override}
+          onChange={(override) => dispatch({ type: 'SET_BUS_PREFS', prefs: { override } })}
         />
       </Section>
 

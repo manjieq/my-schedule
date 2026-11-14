@@ -7,8 +7,10 @@ import { createContext, useContext, useEffect, useReducer, type ReactNode } from
 
 import { getErrorMessage } from './errors';
 import {
+  DEFAULT_BUS_PREFS,
   DEFAULT_CREDIT_CAP,
   STORAGE_KEYS,
+  type BusPrefs,
   type ClassEntry,
   type Loadout,
   type TimeSlot,
@@ -21,6 +23,7 @@ interface AppState {
   includedIds: string[];
   loadouts: Loadout[];
   creditCap: number;
+  bus: BusPrefs;
   /** Message for the most recent failed write, if any — cleared by
    *  DISMISS_SAVE_ERROR. Surfaced by ErrorState so a failed save is never
    *  silent (see lib/storage.ts's writeJSON doc comment for why). */
@@ -28,12 +31,13 @@ interface AppState {
 }
 
 type Action =
-  | { type: 'HYDRATE'; classes: ClassEntry[]; includedIds: string[]; loadouts: Loadout[]; creditCap: number }
+  | { type: 'HYDRATE'; classes: ClassEntry[]; includedIds: string[]; loadouts: Loadout[]; creditCap: number; bus: BusPrefs }
   | { type: 'ADD_CLASS'; name: string; code?: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
   | { type: 'UPDATE_CLASS'; id: string; name: string; code?: string; location?: string; credits: number; instructor?: string; schedule: TimeSlot[] }
   | { type: 'DELETE_CLASS'; id: string }
   | { type: 'TOGGLE_INCLUDED'; id: string }
   | { type: 'SET_CREDIT_CAP'; creditCap: number }
+  | { type: 'SET_BUS_PREFS'; prefs: Partial<BusPrefs> }
   | { type: 'SAVE_LOADOUT'; name: string }
   | { type: 'DELETE_LOADOUT'; id: string }
   | { type: 'LOAD_LOADOUT'; id: string }
@@ -46,6 +50,7 @@ const initialState: AppState = {
   includedIds: [],
   loadouts: [],
   creditCap: DEFAULT_CREDIT_CAP,
+  bus: DEFAULT_BUS_PREFS,
   saveError: null,
 };
 
@@ -59,6 +64,7 @@ function reducer(state: AppState, action: Action): AppState {
         includedIds: action.includedIds,
         loadouts: action.loadouts,
         creditCap: action.creditCap,
+        bus: action.bus,
       };
 
     case 'ADD_CLASS': {
@@ -121,6 +127,9 @@ function reducer(state: AppState, action: Action): AppState {
     case 'SET_CREDIT_CAP':
       return { ...state, creditCap: action.creditCap };
 
+    case 'SET_BUS_PREFS':
+      return { ...state, bus: { ...state.bus, ...action.prefs } };
+
     case 'SAVE_LOADOUT': {
       const includedClasses = state.classes.filter((c) => state.includedIds.includes(c.id));
       const loadout: Loadout = {
@@ -174,9 +183,19 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       readJSON<string[]>(STORAGE_KEYS.includedIds, []),
       readJSON<Loadout[]>(STORAGE_KEYS.loadouts, []),
       readJSON<{ creditCap: number }>(STORAGE_KEYS.settings, { creditCap: DEFAULT_CREDIT_CAP }),
-    ]).then(([classes, includedIds, loadouts, settings]) => {
+      readJSON<Partial<BusPrefs>>(STORAGE_KEYS.bus, {}),
+    ]).then(([classes, includedIds, loadouts, settings, bus]) => {
       if (!isMounted) return;
-      dispatch({ type: 'HYDRATE', classes, includedIds, loadouts, creditCap: settings.creditCap });
+      dispatch({
+        type: 'HYDRATE',
+        classes,
+        includedIds,
+        loadouts,
+        creditCap: settings.creditCap,
+        // Spread over the defaults so a prefs blob saved by an older build,
+        // missing a field added since, still hydrates to a complete object.
+        bus: { ...DEFAULT_BUS_PREFS, ...bus },
+      });
     });
     return () => {
       isMounted = false;
@@ -213,6 +232,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       dispatch({ type: 'SET_SAVE_ERROR', error: getErrorMessage(err) })
     );
   }, [state.isHydrated, state.creditCap]);
+
+  useEffect(() => {
+    if (!state.isHydrated) return;
+    writeJSON(STORAGE_KEYS.bus, state.bus).catch((err) =>
+      dispatch({ type: 'SET_SAVE_ERROR', error: getErrorMessage(err) })
+    );
+  }, [state.isHydrated, state.bus]);
 
   return <AppContext.Provider value={{ state, dispatch }}>{children}</AppContext.Provider>;
 }
